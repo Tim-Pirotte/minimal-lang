@@ -2,11 +2,10 @@
 The compiler for Minimal
 
 ## Project Structure
-- **cmd:** Application entrypoints
 - **built-in:** Implements the logic of the plugins
   - **messenger:** Sends messages that should be shown to the user via output channels
     - **outputs:** The different channels to show the messages
-      - **log-renderer:** Render messages in the terminal
+      - **log-renderer:** Renders messages in the terminal
       - **test-output:** Captures messages for testing
   - **lexer:** Converts text into a series of tokens
     - **matchers:** Packages that match on textual input
