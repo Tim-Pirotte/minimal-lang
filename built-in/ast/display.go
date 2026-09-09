@@ -7,129 +7,118 @@ import (
 	"strings"
 )
 
-const spacesPerLevel = 2
-
 type Displayer struct {
     messenger      *messenger.Messenger
     schema         *ASTSchema
+    output         io.Writer
+    writeFailed    bool
+    SpacesPerLevel uint
 }
 
-func NewDisplayer(messenger *messenger.Messenger, schema *ASTSchema) Displayer {
-    return Displayer{messenger, schema}
+type cursor struct {
+    ast      []Node
+    position uint
 }
 
-func (a *Displayer) Display(ast []Node, o io.Writer) {
-    position := 0
+func NewDisplayer(m *messenger.Messenger, s *ASTSchema, output io.Writer) *Displayer {
+    return &Displayer{m, s, output, false, 2}
+}
 
-    for position != len(ast) {
-        node := ast[position]
-        position++
+func (d *Displayer) Display(ast []Node) {
+    d.writeFailed = false
+    c := cursor{ast, 0}
+
+    for int(c.position) != len(c.ast) {
+        node := c.ast[c.position]
+        c.position++
 
         if node.Type != EndNode {
-            if !a.displayNode(o, ast, node, &position, 0) {
-                return
-            }
-        } else if !a.tryWrite(o, "EndNode %s not inside a Node\n", a.getEndNodeName(node)) {
-            return
+            d.displayNode(&c, node, 0)
+        } else {
+            d.write("EndNode %s not inside a Node\n", d.getEndNodeName(node))
         }
     }
 }
 
-func (a *Displayer) DisplayDiff() {
+func (d *Displayer) DisplayDiff() {
 
 }
 
-func (a *Displayer) displayNode(o io.Writer, ast []Node, node Node, position *int, depth int) (writeSuccess bool) {
-    metadata := a.schema.GetNodeTypeMetadata(node.Type)
+func (d *Displayer) displayNode(c *cursor, node Node, depth int) {
+    metadata := d.schema.GetNodeTypeMetadata(node.Type)
+    indentationSpace := strings.Repeat(" ", int(d.SpacesPerLevel) * depth)
+    debugName := metadata.GetDebugName(node.Reference)
 
-    if !a.tryWrite(
-        o,
-        "%s%s\n",
-        strings.Repeat(" ", spacesPerLevel * depth),
-        metadata.GetDebugName(node.Reference),
-    ) {
-        return false
-    }
+    d.write("%s%s\n", indentationSpace, debugName)
 
-    childCount := a.schema.GetNodeTypeMetadata(node.Type).GetChildCount()
+    childCount := metadata.GetChildCount()
 
     if childCount == VariableChildCount {
-        for *position != len(ast) {
-            nextNode := ast[*position]
+        for int(c.position) != len(c.ast) {
+            nextNode := c.ast[c.position]
 
             if nextNode.Type != EndNode || nextNode.Reference == uint32(node.Type) {
-                *position++
+                c.position++
 
                 if nextNode.Type == EndNode {
-                    return true
+                    return
                 }
 
-                if !a.displayNode(o, ast, nextNode, position, depth + 1) {
-                    return false
-                }
+                d.displayNode(c, nextNode, depth + 1)
             } else {
-                return a.tryWrite(
-                    o,
-                    "%sIncorrect EndNode %s\n",
-                    strings.Repeat(" ", spacesPerLevel * depth),
-                    a.getEndNodeName(nextNode),
-                )
+                d.write("%sIncorrect EndNode %s\n", indentationSpace, d.getEndNodeName(nextNode))
+
+                return
             }
         }
 
-        return a.tryWrite(o, "%sMissing EndNode\n", strings.Repeat(" ", spacesPerLevel * depth))
+        d.write("%sMissing EndNode\n", indentationSpace)
+
+        return
     }
+
+    childIndentationSpace := strings.Repeat(" ", int(d.SpacesPerLevel) * (depth + 1))
 
     for i := range childCount {
-        if *position == len(ast) {
-            return a.tryWrite(
-                o,
-                "%s%d missing\n",
-                strings.Repeat(" ", spacesPerLevel * (depth + 1)),
-                childCount - i,
-            )
+        if int(c.position) == len(c.ast) {
+            d.write("%s%d missing\n", childIndentationSpace, childCount - i)
+
+            return
         }
 
-        nextNode := ast[*position]
-        *position++
+        nextNode := c.ast[c.position]
+        c.position++
 
         if nextNode.Type == EndNode {
-            if !a.tryWrite(
-                o,
-                "%sEndNode %s in fixed childcount Node\n",
-                strings.Repeat(" ", spacesPerLevel * (depth + 1)),
-                a.getEndNodeName(nextNode),
-            ) {
-                return false
-            }
-        } else if !a.displayNode(o, ast, nextNode, position, depth + 1) {
-            return false
+            d.write("%sEndNode %s in fixed childcount Node\n", childIndentationSpace, d.getEndNodeName(nextNode))
+        } else {
+            d.displayNode(c, nextNode, depth + 1)
         }
     }
-
-    return true
 }
 
-func (a *Displayer) tryWrite(output io.Writer, format string, args ...any) bool {
-    _, err := fmt.Fprintf(output, format, args...)
+func (d *Displayer) write(format string, args ...any) {
+    if d.writeFailed {
+        return
+    }
+
+    _, err := fmt.Fprintf(d.output, format, args...)
 
     if err != nil {
-        a.messenger.Send(
+        d.writeFailed = true
+
+        d.messenger.Send(
             messenger.Message{
                 Message: "AST debugger output write failed",
                 Severity: messenger.Error,
             },
         )
-
-        return false
     }
-
-    return true
 }
 
-func (a *Displayer) getEndNodeName(endNode Node) string {
-    if int(endNode.Reference) < len(a.schema.metadata) {
-        return a.schema.GetNodeTypeMetadata(NodeType(endNode.Reference)).GetDebugName(0)
+func (d *Displayer) getEndNodeName(endNode Node) string {
+    if int(endNode.Reference) < len(d.schema.metadata) {
+        return d.schema.GetNodeTypeMetadata(NodeType(endNode.Reference)).GetDebugName(0)
     }
 
     return fmt.Sprintf("UNKNOWN Reference=%d", endNode.Reference)

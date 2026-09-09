@@ -1,3 +1,5 @@
+// Based on Myers diff
+
 package diff
 
 import (
