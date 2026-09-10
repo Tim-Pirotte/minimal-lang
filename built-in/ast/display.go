@@ -35,7 +35,7 @@ func (d *Displayer) Display(ast []Node) {
         if node.Type != EndNode {
             d.displayNodeTree(&c, node, 0)
         } else {
-            d.endNodeOutsideNode(node)
+            d.showEndNodeOutsideNode(node)
         }
     }
 }
@@ -67,7 +67,7 @@ func (d *Displayer) displayVariableChildCount(c *cursor, node Node, indentSpace 
 
         if nextNode.Type == EndNode {
             if nextNode.Reference != uint32(node.Type) {
-                d.incorrectEndNode(indentSpace, nextNode)
+                d.showIncorrectEndNode(indentSpace, nextNode)
 
                 return
             }
@@ -81,7 +81,7 @@ func (d *Displayer) displayVariableChildCount(c *cursor, node Node, indentSpace 
         d.displayNodeTree(c, nextNode, depth + 1)
     }
 
-    d.missingEndNode(indentSpace)
+    d.showMissingEndNode(indentSpace)
 }
 
 func (d *Displayer) displayFixedChildCount(c *cursor, childCount, depth int) {
@@ -89,7 +89,7 @@ func (d *Displayer) displayFixedChildCount(c *cursor, childCount, depth int) {
 
     for i := range childCount {
         if int(c.position) == len(c.ast) {
-            d.missingChildNode(childIndentSpace, childCount - i)
+            d.showMissingChildNode(childIndentSpace, childCount - i)
 
             return
         }
@@ -98,7 +98,7 @@ func (d *Displayer) displayFixedChildCount(c *cursor, childCount, depth int) {
         c.position++
 
         if nextNode.Type == EndNode {
-            d.endNodeInFixedChildCountNode(childIndentSpace, nextNode)
+            d.showEndNodeInFixedChildCountNode(childIndentSpace, nextNode)
         } else {
             d.displayNodeTree(c, nextNode, depth + 1)
         }
@@ -139,23 +139,23 @@ func (d *Displayer) getEndNodeName(endNode Node) string {
     return fmt.Sprintf("UNKNOWN Reference=%d", endNode.Reference)
 }
 
-func (d *Displayer) endNodeOutsideNode(node Node) {
+func (d *Displayer) showEndNodeOutsideNode(node Node) {
     d.write("EndNode %s not inside a Node\n", d.getEndNodeName(node))
 }
 
-func (d *Displayer) incorrectEndNode(indentationSpace string, node Node) {
+func (d *Displayer) showIncorrectEndNode(indentationSpace string, node Node) {
     d.write("%sIncorrect EndNode %s\n", indentationSpace, d.getEndNodeName(node))
 }
 
-func (d *Displayer) missingEndNode(indentationSpace string) {
+func (d *Displayer) showMissingEndNode(indentationSpace string) {
     d.write("%sMissing EndNode\n", indentationSpace)
 }
 
-func (d *Displayer) missingChildNode(childIndentationSpace string, number int) {
+func (d *Displayer) showMissingChildNode(childIndentationSpace string, number int) {
     d.write("%s%d missing\n", childIndentationSpace, number)
 }
 
-func (d *Displayer) endNodeInFixedChildCountNode(indentationSpace string, node Node) {
+func (d *Displayer) showEndNodeInFixedChildCountNode(indentationSpace string, node Node) {
     d.write(
         "%sEndNode %s in fixed childcount Node\n",
         indentationSpace,
