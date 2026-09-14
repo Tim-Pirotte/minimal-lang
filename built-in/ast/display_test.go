@@ -1,19 +1,12 @@
 package ast
 
 import (
-	"bytes"
-	"errors"
-	"minimal/minimal-lang/built-in/messenger"
-	"minimal/minimal-lang/built-in/outputs/test-output"
 	"testing"
 )
 
 type testAST struct {
     a                      *Displayer
     schema                 *ASTSchema
-    buf                    *bytes.Buffer
-    messenger              *messenger.Messenger
-    to                     *testoutput.TestOutput
     zeroChildren           NodeType
     oneChild               NodeType
     twoChildren            NodeType
@@ -37,20 +30,11 @@ func getTestAST() testAST {
         &StructNodeTypeMetadata{DebugName: "Variable2", ChildCount: VariableChildCount},
     )
 
-    m := messenger.New()
-    to := testoutput.New()
-    m.AddOutput(to)
-
-    var buf bytes.Buffer
-
-    a := NewDisplayer(m, schema, &buf)
+    a := NewDisplayer(schema)
 
     return testAST{
         a,
         schema,
-        &buf,
-        m,
-        to,
         zeroChildren,
         oneChild,
         twoChildren,
@@ -78,8 +62,6 @@ func TestCorrect(t *testing.T) {
         {EndNode, uint32(ta.firstVariableChildren)},
     }
 
-    ta.a.Display(ast)
-
     expected := "Zero\n" +
                 "One\n" +
                 "  Zero\n" +
@@ -92,12 +74,11 @@ func TestCorrect(t *testing.T) {
                 "      Zero\n" +
                 "    Zero\n"
 
-    if ta.buf.String() != expected {
-        t.Errorf("\nExpected:\n%sGot:\n%s", expected, ta.buf.String())
-    }
+    actual := ta.a.Display(ast)
 
-    ta.messenger.Close()
-    ta.to.CheckMessages(t, []messenger.Message{})
+    if actual != expected {
+        t.Errorf("\nExpected:\n%sGot:\n%s", expected, actual)
+    }
 }
 
 func TestIncorrectFixedChildren(t *testing.T) {
@@ -108,19 +89,16 @@ func TestIncorrectFixedChildren(t *testing.T) {
         {ta.oneChild, 0},
     }
 
-    ta.a.Display(ast)
-
     expected := "Two\n" +
                 "  One\n" +
                 "    1 missing\n" +
                 "  1 missing\n"
 
-    if ta.buf.String() != expected {
-        t.Errorf("\nExpected:\n%sGot:\n%s", expected, ta.buf.String())
-    }
+    actual := ta.a.Display(ast)
 
-    ta.messenger.Close()
-    ta.to.CheckMessages(t, []messenger.Message{})
+    if actual != expected {
+        t.Errorf("\nExpected:\n%sGot:\n%s", expected, actual)
+    }
 }
 
 func TestMissingEndNode(t *testing.T) {
@@ -131,18 +109,15 @@ func TestMissingEndNode(t *testing.T) {
         {ta.zeroChildren, 0},
     }
 
-    ta.a.Display(ast)
-
     expected := "Variable1\n" +
                 "  Zero\n" +
                 "Missing EndNode\n"
 
-    if ta.buf.String() != expected {
-        t.Errorf("\nExpected:\n%sGot:\n%s", expected, ta.buf.String())
-    }
+    actual := ta.a.Display(ast)
 
-    ta.messenger.Close()
-    ta.to.CheckMessages(t, []messenger.Message{})
+    if actual != expected {
+        t.Errorf("\nExpected:\n%sGot:\n%s", expected, actual)
+    }
 }
 
 func TestMissingEndNodeNested(t *testing.T) {
@@ -157,8 +132,6 @@ func TestMissingEndNodeNested(t *testing.T) {
         {EndNode, uint32(ta.firstVariableChildren)},
     }
 
-    ta.a.Display(ast)
-
     expected := "Variable1\n" +
                 "  Zero\n" +
                 "  Variable2\n" +
@@ -166,12 +139,11 @@ func TestMissingEndNodeNested(t *testing.T) {
                 "    Zero\n" +
                 "  Incorrect EndNode Variable1\n"
 
-    if ta.buf.String() != expected {
-        t.Errorf("\nExpected:\n%sGot:\n%s", expected, ta.buf.String())
-    }
+    actual := ta.a.Display(ast)
 
-    ta.messenger.Close()
-    ta.to.CheckMessages(t, []messenger.Message{})
+    if actual != expected {
+        t.Errorf("\nExpected:\n%sGot:\n%s", expected, actual)
+    }
 }
 
 func TestEndNodeInFixedChildrenNode(t *testing.T) {
@@ -182,17 +154,14 @@ func TestEndNodeInFixedChildrenNode(t *testing.T) {
         {EndNode, uint32(ta.firstVariableChildren)},
     }
 
-    ta.a.Display(ast)
-
     expected := "One\n" +
                 "  EndNode Variable1 in fixed childcount Node\n"
 
-    if ta.buf.String() != expected {
-        t.Errorf("\nExpected:\n%sGot:\n%s", expected, ta.buf.String())
-    }
+    actual := ta.a.Display(ast)
 
-    ta.messenger.Close()
-    ta.to.CheckMessages(t, []messenger.Message{})
+    if actual != expected {
+        t.Errorf("\nExpected:\n%sGot:\n%s", expected, actual)
+    }
 }
 
 func TestUnknownEndNodeReference(t *testing.T) {
@@ -203,38 +172,13 @@ func TestUnknownEndNodeReference(t *testing.T) {
         {EndNode, uint32(100)},
     }
 
-    ta.a.Display(ast)
-
     expected := "Variable1\n" +
                 "Incorrect EndNode UNKNOWN Reference=100\n" +
                 "EndNode UNKNOWN Reference=100 not inside a Node\n"
 
-    if ta.buf.String() != expected {
-        t.Errorf("\nExpected:\n%sGot:\n%s", expected, ta.buf.String())
+    actual := ta.a.Display(ast)
+
+    if actual != expected {
+        t.Errorf("\nExpected:\n%sGot:\n%s", expected, actual)
     }
-
-    ta.messenger.Close()
-    ta.to.CheckMessages(t, []messenger.Message{})
-}
-
-type failingWriter struct{}
-
-func (failingWriter) Write(p []byte) (int, error) {
-    return 0, errors.New("")
-}
-
-func TestFailingWriter(t *testing.T) {
-    ta := getTestAST()
-    writer := failingWriter{}
-
-    ast := []Node{{ta.zeroChildren, 0}}
-
-    d := NewDisplayer(ta.messenger, ta.schema, writer)
-    d.Display(ast)
-
-    ta.messenger.Close()
-    ta.to.CheckMessages(t, []messenger.Message{{
-        Message: "AST debugger output write failed",
-        Severity: messenger.Error,
-    }})
 }
