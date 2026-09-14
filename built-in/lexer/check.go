@@ -3,10 +3,7 @@ package lexer
 import (
     "fmt"
     "testing"
-    "os"
     "unsafe"
-    "minimal/minimal-lang/built-in/messenger"
-    "minimal/minimal-lang/built-in/outputs/log-renderer"
 )
 
 func CheckTokens(t *testing.T, scheme *LexerScheme, expected []Token, text string) {
@@ -19,14 +16,10 @@ func CheckTokens(t *testing.T, scheme *LexerScheme, expected []Token, text strin
         lexer.Advance()
     }
 
-    messenger := messenger.New()
-    messenger.AddOutput(logrenderer.New(os.Stdout))
-
-    lexerDebugger := NewDisplayer(scheme, os.Stdout, messenger)
+    lexerDebugger := NewDisplayer(scheme)
 
     if len(expected) != len(actual) {
-        lexerDebugger.DisplayDiff(text, actual, expected)
-        fmt.Println("")
+        fmt.Printf("%s\n", lexerDebugger.DisplayDiff(text, actual, expected))
         t.Fatal("Expected", len(expected), "tokens but got", len(actual), "tokens")
     }
 
