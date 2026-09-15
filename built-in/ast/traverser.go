@@ -1,10 +1,5 @@
 package ast
 
-// TODO:
-// - Loop over the ast
-// - Keep track of the depth
-// - Run a function per node
-// - Run a function for each of the error cases (one interface for this should be sufficient)
 type traverser struct {
     s        *ASTSchema
     hooks    TraverserHooks
