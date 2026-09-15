@@ -182,3 +182,49 @@ func TestUnknownEndNodeReference(t *testing.T) {
         t.Errorf("\nExpected:\n%sGot:\n%s", expected, actual)
     }
 }
+
+func TestCustomDisplay(t *testing.T) {
+
+}
+
+func TestDiff(t *testing.T) {
+    ta := getTestAST()
+
+    before := []Node{
+        {ta.zeroChildren, 0},
+        {ta.zeroChildren, 0},
+        {ta.oneChild, 0},
+            {ta.oneChild, 0},
+                {ta.zeroChildren, 0},
+        {ta.twoChildren, 0},
+            {ta.zeroChildren, 0},
+            {ta.zeroChildren, 0},
+        {ta.twoChildren, 0},
+            {ta.zeroChildren, 0},
+            {ta.zeroChildren, 0},
+    }
+
+    after := []Node{
+        {ta.zeroChildren, 0},
+        {ta.zeroChildren, 1},
+        {ta.oneChild, 0},
+            {ta.oneChild, 0},
+                {ta.zeroChildren, 1},
+        {ta.twoChildren, 0},
+            {ta.zeroChildren, 0},
+            {ta.zeroChildren, 1},
+        {ta.twoChildren, 0},
+            {ta.zeroChildren, 1},
+            {ta.zeroChildren, 0},
+    }
+
+    expected := "Variable1\n" +
+                "Incorrect EndNode UNKNOWN Reference=100\n" +
+                "EndNode UNKNOWN Reference=100 not inside a Node\n"
+
+    actual := ta.a.DisplayDiff(before, after)
+
+    if actual != expected {
+        t.Errorf("\nExpected:\n%sGot:\n%s", expected, actual)
+    }
+}

@@ -26,11 +26,6 @@ type ASTSchema struct {
     metadata     []NodeTypeMetadata
 }
 
-type Traverser struct {
-    ast      []Node
-    position uint32
-}
-
 func NewSchema() *ASTSchema {
     return &ASTSchema{EndNode, []NodeTypeMetadata{&StructNodeTypeMetadata{DebugName: "EndNode"}}}
 }
