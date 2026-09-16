@@ -2,7 +2,6 @@ package ast
 
 import (
 	"fmt"
-	"minimal/minimal-lang/built-in/diff"
 	"strings"
 )
 
@@ -10,43 +9,18 @@ const spacesPerLevel = 2
 
 type Displayer struct {
     schema         *ASTSchema
-    SpacesPerLevel uint
+    SpacesPerLevel uint32
     displayers     map[NodeType]NodeDisplayer
+}
+
+type DisplayState struct {
+    displayer Displayer
+    sb        strings.Builder
 }
 
 type NodeDisplayer interface {
     GetNodeType() NodeType
     ToString(reference uint32) string
-}
-
-type displayState struct {
-    ast        []Node
-    position   uint
-    sb         strings.Builder
-    prefixHook prefixHook
-}
-
-type prefixHook interface {
-    getPrefix(*displayState) string
-}
-
-type diffPrefix struct {
-    nodeDiff []diff.DiffPart[Node]
-}
-
-func (d *diffPrefix) getPrefix(s *displayState) string {
-    part := d.nodeDiff[s.position]
-
-    prefix := "  "
-
-    switch part.Type {
-    case diff.Insert:
-        prefix = "+ "
-    case diff.Delete:
-        prefix = "- "
-    }
-
-    return prefix
 }
 
 func NewDisplayer(s *ASTSchema) *Displayer {
@@ -66,100 +40,45 @@ func (d *Displayer) AddDisplayer(n NodeDisplayer) bool {
 }
 
 func (d *Displayer) Display(ast []Node) string {
-    return d.display(ast, nil)
-}
+    s := DisplayState{*d, strings.Builder{}}
 
-func (d *Displayer) DisplayDiff(before, after []Node) string {
-    nodeDiff := diff.GetDiff(before, after, compareNodes)
-    ast := make([]Node, len(nodeDiff))
-
-    for i, part := range nodeDiff {
-        ast[i] = part.Value
-    }
-
-    return d.display(ast, &diffPrefix{nodeDiff})
-}
-
-func compareNodes(a, b Node) bool {
-    return a.Type == b.Type && a.Reference == b.Reference
-}
-
-func (d *Displayer) display(ast []Node, prefixHook prefixHook) string {
-    s := displayState{ast, 0, strings.Builder{}, prefixHook}
-
-    for int(s.position) != len(s.ast) {
-        node := s.ast[s.position]
-        s.position++
-
-        if node.Type != EndNode {
-            d.displayNodeTree(&s, node, 0)
-        } else {
-            d.showEndNodeOutsideNode(&s, node)
-        }
-    }
+    Traverse(d.schema, &s, ast)
 
     return s.sb.String()
 }
 
-func (d *Displayer) displayNodeTree(s *displayState, node Node, depth int) {
-    prefix := ""
+func (s *DisplayState) VisitNode(node Node, depth uint32) {
+    fmt.Fprintf(&s.sb, "%s%s\n", s.displayer.getIndentation(depth), s.displayer.displayNode(node))
+}
 
-    if s.prefixHook != nil {
-        prefix = s.prefixHook.getPrefix(s)
-    }
-
-    fmt.Fprintf(&s.sb, "%s%s%s\n", d.getIndentation(depth), prefix, d.displayNode(node))
-
-    metadata := d.schema.GetNodeTypeMetadata(node.Type)
-    childCount := metadata.GetChildCount()
-
-    if childCount == VariableChildCount {
-        d.displayVariableChildCount(s, node, depth)
+func (s *DisplayState) HandleUnexpectedEndNode(reference, depth uint32) {
+    if depth == 0 {
+        fmt.Fprintf(&s.sb, "EndNode %s not inside a Node\n", s.displayer.getEndNodeName(reference))
     } else {
-        d.displayFixedChildCount(s, int(childCount), depth)
+        fmt.Fprintf(
+            &s.sb,
+            "%sEndNode %s in fixed childcount Node\n",
+            s.displayer.getIndentation(depth),
+            s.displayer.getEndNodeName(reference),
+        )
     }
 }
 
-func (d *Displayer) displayVariableChildCount(s *displayState, node Node, depth int) {
-    for int(s.position) != len(s.ast) {
-        nextNode := s.ast[s.position]
-
-        if nextNode.Type == EndNode {
-            if nextNode.Reference != uint32(node.Type) {
-                d.showIncorrectEndNode(s, depth, nextNode)
-
-                return
-            }
-
-            s.position++
-
-            return
-        }
-
-        s.position++
-        d.displayNodeTree(s, nextNode, depth + 1)
-    }
-
-    d.showMissingEndNode(s, depth)
+func (s *DisplayState) HandleIncorrectEndNode(reference, depth uint32) {
+    fmt.Fprintf(
+        &s.sb,
+        "%sIncorrect EndNode %s\n",
+        s.displayer.getIndentation(depth),
+        s.displayer.getEndNodeName(reference),
+    )
 }
 
-func (d *Displayer) displayFixedChildCount(s *displayState, childCount, depth int) {
-    for i := range childCount {
-        if int(s.position) == len(s.ast) {
-            d.showMissingChildNode(s, depth + 1, childCount - i)
+func (s *DisplayState) HandleMissingEndNode(depth uint32) {
+    fmt.Fprintf(&s.sb, "%sMissing EndNode\n", s.displayer.getIndentation(depth))
+}
 
-            return
-        }
-
-        nextNode := s.ast[s.position]
-        s.position++
-
-        if nextNode.Type == EndNode {
-            d.showEndNodeInFixedCountNode(s, depth + 1, nextNode)
-        } else {
-            d.displayNodeTree(s, nextNode, depth + 1)
-        }
-    }
+func (s *DisplayState) HandleMissingChildNodes(count uint8, depth uint32) {
+    fmt.Fprintf(&s.sb, "%s%d missing\n", s.displayer.getIndentation(depth), count)
 }
 
 func (d *Displayer) displayNode(node Node) string {
@@ -170,39 +89,22 @@ func (d *Displayer) displayNode(node Node) string {
     return d.schema.GetNodeTypeMetadata(node.Type).GetDebugName(node.Reference)
 }
 
-func (d *Displayer) getIndentation(depth int) string {
-    return strings.Repeat(" ", int(d.SpacesPerLevel) * depth)
+func (d *Displayer) getIndentation(depth uint32) string {
+    return strings.Repeat(" ", int(d.SpacesPerLevel * depth))
 }
 
-func (d *Displayer) getEndNodeName(endNode Node) string {
-    if int(endNode.Reference) < len(d.schema.metadata) {
-        return d.schema.GetNodeTypeMetadata(NodeType(endNode.Reference)).GetDebugName(0)
+func (d *Displayer) getEndNodeName(reference uint32) string {
+    if int(reference) < len(d.schema.metadata) {
+        return d.schema.GetNodeTypeMetadata(NodeType(reference)).GetDebugName(0)
     }
 
-    return fmt.Sprintf("UNKNOWN Reference=%d", endNode.Reference)
+    return fmt.Sprintf("UNKNOWN Reference=%d", reference)
 }
 
-func (d *Displayer) showEndNodeOutsideNode(s *displayState, node Node) {
-    fmt.Fprintf(&s.sb, "EndNode %s not inside a Node\n", d.getEndNodeName(node))
+func (d *Displayer) DisplayDiff(before, after []Node) string {
+    return ""
 }
 
-func (d *Displayer) showIncorrectEndNode(s *displayState, depth int, node Node) {
-    fmt.Fprintf(&s.sb, "%sIncorrect EndNode %s\n", d.getIndentation(depth), d.getEndNodeName(node))
-}
-
-func (d *Displayer) showMissingEndNode(s *displayState, depth int) {
-    fmt.Fprintf(&s.sb, "%sMissing EndNode\n", d.getIndentation(depth))
-}
-
-func (d *Displayer) showMissingChildNode(s *displayState, depth, number int) {
-    fmt.Fprintf(&s.sb, "%s%d missing\n", d.getIndentation(depth), number)
-}
-
-func (d *Displayer) showEndNodeInFixedCountNode(s *displayState, depth int, node Node) {
-    fmt.Fprintf(
-        &s.sb,
-        "%sEndNode %s in fixed childcount Node\n",
-        d.getIndentation(depth),
-        d.getEndNodeName(node),
-    )
+func compareNodes(a, b Node) bool {
+    return a.Type == b.Type && a.Reference == b.Reference
 }
