@@ -3,6 +3,7 @@ package ast
 import (
 	"fmt"
 	"strings"
+    "minimal/minimal-lang/built-in/diff"
 )
 
 const spacesPerLevel = 2
@@ -16,6 +17,16 @@ type Displayer struct {
 type DisplayState struct {
     displayer Displayer
     sb        strings.Builder
+}
+
+type tagTraverser struct {
+    result []taggedNode
+}
+
+type taggedNode struct {
+    node  Node
+    depth uint32
+    valid bool
 }
 
 type NodeDisplayer interface {
@@ -45,6 +56,42 @@ func (d *Displayer) Display(ast []Node) string {
     Traverse(d.schema, &s, ast)
 
     return s.sb.String()
+}
+
+func (d *Displayer) DisplayDiff(before, after []Node) string {
+    t := tagTraverser{[]taggedNode{}}
+
+    Traverse(d.schema, &t, before)
+    taggedBefore := t.result
+    t.result = []taggedNode{}
+
+    Traverse(d.schema, &t, after)
+    taggedAfter := t.result
+
+    astDiff := diff.GetDiff(taggedBefore, taggedAfter, compareNodes)
+
+    sb := strings.Builder{}
+
+    for _, part := range astDiff {
+        fmt.Fprint(&sb, d.getIndentation(part.Value.depth))
+
+        switch part.Type {
+        case diff.Equal:
+            fmt.Fprint(&sb, "  ")
+        case diff.Insert:
+            fmt.Fprint(&sb, "+ ")
+        case diff.Delete:
+            fmt.Fprint(&sb, "- ")
+        }
+
+        fmt.Fprintf(&sb, "%s\n", d.displayNode(part.Value.node))
+    }
+
+    return sb.String()
+}
+
+func compareNodes(a, b taggedNode) bool {
+    return a.node.Type == b.node.Type && a.node.Reference == b.node.Reference
 }
 
 func (s *DisplayState) VisitNode(node Node, depth uint32) {
@@ -101,10 +148,18 @@ func (d *Displayer) getEndNodeName(reference uint32) string {
     return fmt.Sprintf("UNKNOWN Reference=%d", reference)
 }
 
-func (d *Displayer) DisplayDiff(before, after []Node) string {
-    return ""
+func (t *tagTraverser) VisitNode(node Node, depth uint32) {
+    t.result = append(t.result, taggedNode{node, depth, true})
 }
 
-func compareNodes(a, b Node) bool {
-    return a.Type == b.Type && a.Reference == b.Reference
+func (t *tagTraverser) HandleUnexpectedEndNode(reference, depth uint32) {
+    t.result = append(t.result, taggedNode{Node{EndNode, reference}, depth, false})
 }
+
+func (t *tagTraverser) HandleIncorrectEndNode(reference, depth uint32) {
+    t.result = append(t.result, taggedNode{Node{EndNode, reference}, depth, false})
+}
+
+// TODO insert a proxy node for these two cases
+func (t *tagTraverser) HandleMissingEndNode(depth uint32) {}
+func (t *tagTraverser) HandleMissingChildNodes(count uint8, depth uint32) {}

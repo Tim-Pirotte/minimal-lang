@@ -218,9 +218,21 @@ func TestDiff(t *testing.T) {
             {ta.zeroChildren, 0},
     }
 
-    expected := "Variable1\n" +
-                "Incorrect EndNode UNKNOWN Reference=100\n" +
-                "EndNode UNKNOWN Reference=100 not inside a Node\n"
+    expected := "  Zero\n" +
+                "- Zero\n" +
+                "+ Zero Reference=1\n" +
+                "  One\n" +
+                "    One\n" +
+                "    - Zero\n" +
+                "    + Zero Reference=1\n" +
+                "  Two\n" +
+                "    Zero\n" +
+                "  + Zero Reference=1\n" +
+                "  - Zero\n" +
+                "  Two\n" +
+                "  - Zero\n" +
+                "  + Zero Reference=1\n" +
+                "    Zero\n"
 
     actual := ta.a.DisplayDiff(before, after)
 
