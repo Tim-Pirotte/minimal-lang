@@ -10,10 +10,11 @@ import (
 const spacesPerLevel = 2
 
 type Displayer struct {
-    schema         *ASTSchema
-    SpacesPerLevel uint32
-    OutputANSI     bool
-    displayers     map[NodeType]NodeDisplayer
+    schema               *ASTSchema
+    SpacesPerLevel       uint32
+    OutputANSI           bool
+    missingEndNodeProxy  NodeType
+    missingChildrenProxy NodeType
 }
 
 type DisplayState struct {
@@ -22,6 +23,8 @@ type DisplayState struct {
 }
 
 type tagTraverser struct {
+    missingEndNodeProxy  NodeType
+    missingChildrenProxy NodeType
     result []taggedNode
 }
 
@@ -31,25 +34,13 @@ type taggedNode struct {
     valid bool
 }
 
-type NodeDisplayer interface {
-    GetNodeType() NodeType
-    ToString(reference uint32) string
-}
+type missingChildrenProxy struct {}
 
 func NewDisplayer(s *ASTSchema) *Displayer {
-    return &Displayer{s, spacesPerLevel, true, map[NodeType]NodeDisplayer{}}
-}
+    missingEndNodeProxy := s.NewNodeType(&StructNodeTypeMetadata{DebugName: "Missing EndNode"})
+    missingChildrenProxy := s.NewNodeType(&missingChildrenProxy{})
 
-func (d *Displayer) AddDisplayer(n NodeDisplayer) bool {
-    nodeType := n.GetNodeType()
-
-    if _, ok := d.displayers[nodeType]; ok {
-        return false
-    }
-
-    d.displayers[nodeType] = n
-
-    return true
+    return &Displayer{s, spacesPerLevel, true, missingEndNodeProxy, missingChildrenProxy}
 }
 
 func (d *Displayer) Display(ast []Node) string {
@@ -61,7 +52,7 @@ func (d *Displayer) Display(ast []Node) string {
 }
 
 func (d *Displayer) DisplayDiff(before, after []Node) string {
-    t := tagTraverser{[]taggedNode{}}
+    t := tagTraverser{d.missingEndNodeProxy, d.missingChildrenProxy, []taggedNode{}}
 
     Traverse(d.schema, &t, before)
     taggedBefore := t.result
@@ -143,10 +134,6 @@ func (s *DisplayState) HandleMissingChildNodes(count uint8, depth uint32) {
 }
 
 func (d *Displayer) displayNode(node Node) string {
-    if displayer, ok := d.displayers[node.Type]; ok {
-        return displayer.ToString(node.Reference)
-    }
-
     return d.schema.GetNodeTypeMetadata(node.Type).GetDebugName(node.Reference)
 }
 
@@ -174,6 +161,22 @@ func (t *tagTraverser) HandleIncorrectEndNode(reference, depth uint32) {
     t.result = append(t.result, taggedNode{Node{EndNode, reference}, depth, false})
 }
 
-// TODO insert a proxy node for these two cases
-func (t *tagTraverser) HandleMissingEndNode(depth uint32) {}
-func (t *tagTraverser) HandleMissingChildNodes(count uint8, depth uint32) {}
+func (t *tagTraverser) HandleMissingEndNode(depth uint32) {
+    t.result = append(t.result, taggedNode{Node{t.missingEndNodeProxy, 0}, depth, false})
+}
+
+func (t *tagTraverser) HandleMissingChildNodes(count uint8, depth uint32) {
+    t.result = append(t.result, taggedNode{Node{t.missingChildrenProxy, uint32(count)}, depth, false})
+}
+
+func (*missingChildrenProxy) GetDisplayName(uint32) string {
+    return ""
+}
+
+func (m *missingChildrenProxy) GetDebugName(reference uint32) string {
+    return fmt.Sprintf("%d missing", reference)
+}
+
+func (m *missingChildrenProxy) GetChildCount() uint8 {
+    return 0
+}

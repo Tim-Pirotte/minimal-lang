@@ -9,6 +9,7 @@ type traverser struct {
 
 type TraverserHooks interface {
     VisitNode(node Node, depth uint32)
+    // TODO return special nodes instead
     HandleUnexpectedEndNode(reference, depth uint32)
     HandleIncorrectEndNode(reference, depth uint32)
     HandleMissingEndNode(depth uint32)
