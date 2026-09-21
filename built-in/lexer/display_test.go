@@ -11,7 +11,7 @@ func TestDisplay(t *testing.T) {
     s := NewScheme()
     l := s.Lex(source)
 
-    d := NewDisplayer(s, true)
+    d := NewDisplayer(s)
 
     tokens := []Token{}
 
@@ -37,7 +37,7 @@ func TestColor(t *testing.T) {
     s := NewScheme()
     l := s.Lex(source)
 
-    d := NewDisplayer(s, true)
+    d := NewDisplayer(s)
     d.SetTokenTypeColor(UNKNOWN, ansi.RGB{R: 197, G: 255, B: 23})
 
     tokens := []Token{}
@@ -64,7 +64,8 @@ func TestDiff(t *testing.T) {
     l1 := s.Lex(source[:1])
     l2 := s.Lex(source[1:])
 
-    d := NewDisplayer(s, false)
+    d := NewDisplayer(s)
+    d.OutputANSI = false
 
     tokens1 := []Token{}
 
@@ -98,7 +99,7 @@ func TestColoredDiff(t *testing.T) {
     l1 := s.Lex(source[:1])
     l2 := s.Lex(source[1:])
 
-    d := NewDisplayer(s, true)
+    d := NewDisplayer(s)
 
     tokens1 := []Token{}
 
@@ -133,7 +134,8 @@ func TestMultiSourceDiff(t *testing.T) {
     l1 := s.Lex(source1)
     l2 := s.Lex(source2)
 
-    d := NewDisplayer(s, false)
+    d := NewDisplayer(s)
+    d.OutputANSI = false
 
     tokens1 := []Token{}
 

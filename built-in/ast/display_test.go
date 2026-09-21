@@ -5,7 +5,7 @@ import (
 )
 
 type testAST struct {
-    a                      *Displayer
+    d                      *Displayer
     schema                 *ASTSchema
     zeroChildren           NodeType
     oneChild               NodeType
@@ -74,7 +74,7 @@ func TestCorrect(t *testing.T) {
                 "      Zero\n" +
                 "    Zero\n"
 
-    actual := ta.a.Display(ast)
+    actual := ta.d.Display(ast)
 
     if actual != expected {
         t.Errorf("\nExpected:\n%sGot:\n%s", expected, actual)
@@ -94,7 +94,7 @@ func TestIncorrectFixedChildren(t *testing.T) {
                 "    1 missing\n" +
                 "  1 missing\n"
 
-    actual := ta.a.Display(ast)
+    actual := ta.d.Display(ast)
 
     if actual != expected {
         t.Errorf("\nExpected:\n%sGot:\n%s", expected, actual)
@@ -113,7 +113,7 @@ func TestMissingEndNode(t *testing.T) {
                 "  Zero\n" +
                 "Missing EndNode\n"
 
-    actual := ta.a.Display(ast)
+    actual := ta.d.Display(ast)
 
     if actual != expected {
         t.Errorf("\nExpected:\n%sGot:\n%s", expected, actual)
@@ -139,7 +139,7 @@ func TestMissingEndNodeNested(t *testing.T) {
                 "    Zero\n" +
                 "  Incorrect EndNode Variable1\n"
 
-    actual := ta.a.Display(ast)
+    actual := ta.d.Display(ast)
 
     if actual != expected {
         t.Errorf("\nExpected:\n%sGot:\n%s", expected, actual)
@@ -157,7 +157,7 @@ func TestEndNodeInFixedChildrenNode(t *testing.T) {
     expected := "One\n" +
                 "  EndNode Variable1 in fixed childcount Node\n"
 
-    actual := ta.a.Display(ast)
+    actual := ta.d.Display(ast)
 
     if actual != expected {
         t.Errorf("\nExpected:\n%sGot:\n%s", expected, actual)
@@ -176,7 +176,7 @@ func TestUnknownEndNodeReference(t *testing.T) {
                 "Incorrect EndNode UNKNOWN Reference=100\n" +
                 "EndNode UNKNOWN Reference=100 not inside a Node\n"
 
-    actual := ta.a.Display(ast)
+    actual := ta.d.Display(ast)
 
     if actual != expected {
         t.Errorf("\nExpected:\n%sGot:\n%s", expected, actual)
@@ -234,7 +234,32 @@ func TestDiff(t *testing.T) {
                 "  + Zero Reference=1\n" +
                 "    Zero\n"
 
-    actual := ta.a.DisplayDiff(before, after)
+    ta.d.OutputANSI = false
+    actual := ta.d.DisplayDiff(before, after)
+
+    if actual != expected {
+        t.Errorf("\nExpected:\n%sGot:\n%s", expected, actual)
+    }
+}
+
+func TestColoredDiff(t *testing.T) {
+    ta := getTestAST()
+
+    before := []Node{
+        {ta.zeroChildren, 0},
+        {ta.zeroChildren, 1},
+    }
+
+    after := []Node{
+        {ta.zeroChildren, 1},
+        {ta.zeroChildren, 0},
+    }
+
+    expected := "\x1b[38;2;245;5;61m- \x1b[0mZero\n" +
+                "  Zero Reference=1\n" +
+                "\x1b[38;2;121;245;5m+ \x1b[0mZero\n"
+
+    actual := ta.d.DisplayDiff(before, after)
 
     if actual != expected {
         t.Errorf("\nExpected:\n%sGot:\n%s", expected, actual)

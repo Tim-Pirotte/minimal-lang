@@ -2,7 +2,6 @@ package ansi
 
 import "fmt"
 
-// TODO add support for no ANSI
 const Reset = csi + "0" + sgr
 
 const csi = "\x1b["

@@ -2,8 +2,9 @@ package ast
 
 import (
 	"fmt"
+	"minimal/minimal-lang/built-in/ansi"
+	"minimal/minimal-lang/built-in/diff"
 	"strings"
-    "minimal/minimal-lang/built-in/diff"
 )
 
 const spacesPerLevel = 2
@@ -11,6 +12,7 @@ const spacesPerLevel = 2
 type Displayer struct {
     schema         *ASTSchema
     SpacesPerLevel uint32
+    OutputANSI     bool
     displayers     map[NodeType]NodeDisplayer
 }
 
@@ -35,7 +37,7 @@ type NodeDisplayer interface {
 }
 
 func NewDisplayer(s *ASTSchema) *Displayer {
-    return &Displayer{s, spacesPerLevel, map[NodeType]NodeDisplayer{}}
+    return &Displayer{s, spacesPerLevel, true, map[NodeType]NodeDisplayer{}}
 }
 
 func (d *Displayer) AddDisplayer(n NodeDisplayer) bool {
@@ -79,9 +81,21 @@ func (d *Displayer) DisplayDiff(before, after []Node) string {
         case diff.Equal:
             fmt.Fprint(&sb, "  ")
         case diff.Insert:
-            fmt.Fprint(&sb, "+ ")
+            prefix := "+ "
+
+            if d.OutputANSI {
+                prefix = ansi.RGB{R: 121, G: 245, B: 5}.ToString() + prefix + ansi.Reset
+            }
+
+            fmt.Fprint(&sb, prefix)
         case diff.Delete:
-            fmt.Fprint(&sb, "- ")
+            prefix := "- "
+
+            if d.OutputANSI {
+                prefix = ansi.RGB{R: 245, G: 5, B: 61}.ToString() + prefix + ansi.Reset
+            }
+
+            fmt.Fprint(&sb, prefix)
         }
 
         fmt.Fprintf(&sb, "%s\n", d.displayNode(part.Value.node))

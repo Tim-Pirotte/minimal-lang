@@ -16,7 +16,7 @@ func CheckTokens(t *testing.T, scheme *LexerScheme, expected []Token, text strin
         lexer.Advance()
     }
 
-    lexerDebugger := NewDisplayer(scheme, true)
+    lexerDebugger := NewDisplayer(scheme)
 
     if len(expected) != len(actual) {
         fmt.Printf("%s\n", lexerDebugger.DisplayDiff(text, actual, expected))
