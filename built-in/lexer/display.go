@@ -11,11 +11,12 @@ import (
 
 type Displayer struct {
     scheme      *LexerScheme
+    outputANSI  bool
     tokenColors map[TokenType]ansi.RGB
 }
 
-func NewDisplayer(scheme *LexerScheme) *Displayer {
-    return &Displayer{scheme, map[TokenType]ansi.RGB{}}
+func NewDisplayer(scheme *LexerScheme, outputANSI bool) *Displayer {
+    return &Displayer{scheme, outputANSI, map[TokenType]ansi.RGB{}}
 }
 
 func (d *Displayer) SetTokenTypeColor(tokenType TokenType, color ansi.RGB) {
@@ -56,9 +57,17 @@ func (d *Displayer) DisplayMultiSourceDiff(
         switch diffPart.Type {
         case diff.Insert:
             prefix = " + "
+
+            if d.outputANSI {
+                prefix = ansi.RGB{R: 121, G: 245, B: 5}.ToString() + prefix + ansi.Reset
+            }
         case diff.Delete:
             prefix = " - "
             source = sourceBefore
+
+            if d.outputANSI {
+                prefix = ansi.RGB{R: 245, G: 5, B: 61}.ToString() + prefix + ansi.Reset
+            }
         }
 
         fmt.Fprintf(sb, "%s%s\n", prefix, d.StringifyToken(source, diffPart.Value))
@@ -71,7 +80,7 @@ func (d *Displayer) StringifyToken(source string, token Token) string {
     name := d.scheme.GetTokenTypeMetadata(token.Type).DebugName
     paddedName := fmt.Sprintf("%-20s", name)
 
-    if color, ok := d.tokenColors[token.Type]; ok {
+    if color, ok := d.tokenColors[token.Type]; ok && d.outputANSI {
         paddedName = color.ToString() + paddedName + ansi.Reset
     }
 

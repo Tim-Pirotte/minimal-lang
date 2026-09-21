@@ -11,7 +11,7 @@ func TestDisplay(t *testing.T) {
     s := NewScheme()
     l := s.Lex(source)
 
-    d := NewDisplayer(s)
+    d := NewDisplayer(s, true)
 
     tokens := []Token{}
 
@@ -37,7 +37,7 @@ func TestColor(t *testing.T) {
     s := NewScheme()
     l := s.Lex(source)
 
-    d := NewDisplayer(s)
+    d := NewDisplayer(s, true)
     d.SetTokenTypeColor(UNKNOWN, ansi.RGB{R: 197, G: 255, B: 23})
 
     tokens := []Token{}
@@ -64,7 +64,7 @@ func TestDiff(t *testing.T) {
     l1 := s.Lex(source[:1])
     l2 := s.Lex(source[1:])
 
-    d := NewDisplayer(s)
+    d := NewDisplayer(s, false)
 
     tokens1 := []Token{}
 
@@ -90,6 +90,40 @@ func TestDiff(t *testing.T) {
     }
 }
 
+func TestColoredDiff(t *testing.T) {
+    source := "ab"
+
+    s := NewScheme()
+
+    l1 := s.Lex(source[:1])
+    l2 := s.Lex(source[1:])
+
+    d := NewDisplayer(s, true)
+
+    tokens1 := []Token{}
+
+    for l1.Peek(0).Type != END {
+        tokens1 = append(tokens1, l1.Peek(0))
+        l1.Advance()
+    }
+
+    tokens2 := []Token{}
+
+    for l2.Peek(0).Type != END {
+        tokens2 = append(tokens2, l2.Peek(0))
+        l2.Advance()
+    }
+
+    expected := "\x1b[38;2;245;5;61m - \x1b[0mUNKNOWN              \"a\"                       0..1      (1)\n" +
+                "\x1b[38;2;121;245;5m + \x1b[0mUNKNOWN              \"b\"                       1..2      (1)\n"
+
+    actual := d.DisplayDiff(source, tokens1, tokens2)
+
+    if actual != expected {
+        t.Errorf("\nExpected:\n%s\nGot:\n%s", expected, actual)
+    }
+}
+
 func TestMultiSourceDiff(t *testing.T) {
     source1 := "aa"
     source2 := "ba"
@@ -99,7 +133,7 @@ func TestMultiSourceDiff(t *testing.T) {
     l1 := s.Lex(source1)
     l2 := s.Lex(source2)
 
-    d := NewDisplayer(s)
+    d := NewDisplayer(s, false)
 
     tokens1 := []Token{}
 
