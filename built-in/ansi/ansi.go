@@ -2,6 +2,7 @@ package ansi
 
 import "fmt"
 
+// TODO add support for no ANSI
 const Reset = csi + "0" + sgr
 
 const csi = "\x1b["
@@ -9,10 +10,14 @@ const sgr = "m"
 const foreground = "38"
 const trueColor = "2"
 
-type RGB string
+type RGB struct {
+    R uint8
+    G uint8
+    B uint8
+}
 
-func GetRGBColor(r, g, b uint8) RGB {
+func (c RGB) ToString() string {
     format := csi + foreground + ";" + trueColor + ";%d;%d;%d" + sgr
 
-    return RGB(fmt.Sprintf(format, r, g, b))
+    return fmt.Sprintf(format, c.R, c.G, c.B)
 }

@@ -72,7 +72,7 @@ func (d *Displayer) StringifyToken(source string, token Token) string {
     paddedName := fmt.Sprintf("%-20s", name)
 
     if color, ok := d.tokenColors[token.Type]; ok {
-        paddedName = string(color) + paddedName + ansi.Reset
+        paddedName = color.ToString() + paddedName + ansi.Reset
     }
 
     if !substring.IsSubString(source, token.Value) {

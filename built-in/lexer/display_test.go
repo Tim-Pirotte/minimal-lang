@@ -38,7 +38,7 @@ func TestColor(t *testing.T) {
     l := s.Lex(source)
 
     d := NewDisplayer(s)
-    d.SetTokenTypeColor(UNKNOWN, ansi.GetRGBColor(197, 255, 23))
+    d.SetTokenTypeColor(UNKNOWN, ansi.RGB{R: 197, G: 255, B: 23})
 
     tokens := []Token{}
 
