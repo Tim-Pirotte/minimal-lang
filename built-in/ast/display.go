@@ -7,14 +7,16 @@ import (
 	"strings"
 )
 
-const spacesPerLevel = 2
+const (
+    spacesPerLevel = 2
+    outputANSI = true
+)
 
 type Displayer struct {
-    schema               *ASTSchema
-    SpacesPerLevel       uint32
-    OutputANSI           bool
-    missingEndNodeProxy  NodeType
-    missingChildrenProxy NodeType
+    astSchema       *ASTSchema
+    traverserSchema TraverserSchema
+    SpacesPerLevel  uint32
+    OutputANSI      bool
 }
 
 type DisplayState struct {
@@ -23,42 +25,33 @@ type DisplayState struct {
 }
 
 type tagTraverser struct {
-    missingEndNodeProxy  NodeType
-    missingChildrenProxy NodeType
     result []taggedNode
 }
 
 type taggedNode struct {
     node  Node
     depth uint32
-    valid bool
 }
 
-type missingChildrenProxy struct {}
-
 func NewDisplayer(s *ASTSchema) *Displayer {
-    missingEndNodeProxy := s.NewNodeType(&StructNodeTypeMetadata{DebugName: "Missing EndNode"})
-    missingChildrenProxy := s.NewNodeType(&missingChildrenProxy{})
-
-    return &Displayer{s, spacesPerLevel, true, missingEndNodeProxy, missingChildrenProxy}
+    return &Displayer{s, *NewTraverserScheme(s), spacesPerLevel, outputANSI}
 }
 
 func (d *Displayer) Display(ast []Node) string {
     s := DisplayState{*d, strings.Builder{}}
-
-    Traverse(d.schema, &s, ast)
+    d.traverserSchema.Traverse(&s, ast)
 
     return s.sb.String()
 }
 
 func (d *Displayer) DisplayDiff(before, after []Node) string {
-    t := tagTraverser{d.missingEndNodeProxy, d.missingChildrenProxy, []taggedNode{}}
+    t := tagTraverser{[]taggedNode{}}
 
-    Traverse(d.schema, &t, before)
+    d.traverserSchema.Traverse(&t, before)
     taggedBefore := t.result
     t.result = []taggedNode{}
 
-    Traverse(d.schema, &t, after)
+    d.traverserSchema.Traverse(&t, after)
     taggedAfter := t.result
 
     astDiff := diff.GetDiff(taggedBefore, taggedAfter, compareNodes)
@@ -103,80 +96,14 @@ func (s *DisplayState) VisitNode(node Node, depth uint32) {
     fmt.Fprintf(&s.sb, "%s%s\n", s.displayer.getIndentation(depth), s.displayer.displayNode(node))
 }
 
-func (s *DisplayState) HandleUnexpectedEndNode(reference, depth uint32) {
-    if depth == 0 {
-        fmt.Fprintf(&s.sb, "EndNode %s not inside a Node\n", s.displayer.getEndNodeName(reference))
-    } else {
-        fmt.Fprintf(
-            &s.sb,
-            "%sEndNode %s in fixed childcount Node\n",
-            s.displayer.getIndentation(depth),
-            s.displayer.getEndNodeName(reference),
-        )
-    }
-}
-
-func (s *DisplayState) HandleIncorrectEndNode(reference, depth uint32) {
-    fmt.Fprintf(
-        &s.sb,
-        "%sIncorrect EndNode %s\n",
-        s.displayer.getIndentation(depth),
-        s.displayer.getEndNodeName(reference),
-    )
-}
-
-func (s *DisplayState) HandleMissingEndNode(depth uint32) {
-    fmt.Fprintf(&s.sb, "%sMissing EndNode\n", s.displayer.getIndentation(depth))
-}
-
-func (s *DisplayState) HandleMissingChildNodes(count uint8, depth uint32) {
-    fmt.Fprintf(&s.sb, "%s%d missing\n", s.displayer.getIndentation(depth), count)
-}
-
 func (d *Displayer) displayNode(node Node) string {
-    return d.schema.GetNodeTypeMetadata(node.Type).GetDebugName(node.Reference)
+    return d.astSchema.GetNodeTypeMetadata(node.Type).GetDebugName(node.Reference)
 }
 
 func (d *Displayer) getIndentation(depth uint32) string {
     return strings.Repeat(" ", int(d.SpacesPerLevel * depth))
 }
 
-func (d *Displayer) getEndNodeName(reference uint32) string {
-    if int(reference) < len(d.schema.metadata) {
-        return d.schema.GetNodeTypeMetadata(NodeType(reference)).GetDebugName(0)
-    }
-
-    return fmt.Sprintf("UNKNOWN Reference=%d", reference)
-}
-
 func (t *tagTraverser) VisitNode(node Node, depth uint32) {
-    t.result = append(t.result, taggedNode{node, depth, true})
-}
-
-func (t *tagTraverser) HandleUnexpectedEndNode(reference, depth uint32) {
-    t.result = append(t.result, taggedNode{Node{EndNode, reference}, depth, false})
-}
-
-func (t *tagTraverser) HandleIncorrectEndNode(reference, depth uint32) {
-    t.result = append(t.result, taggedNode{Node{EndNode, reference}, depth, false})
-}
-
-func (t *tagTraverser) HandleMissingEndNode(depth uint32) {
-    t.result = append(t.result, taggedNode{Node{t.missingEndNodeProxy, 0}, depth, false})
-}
-
-func (t *tagTraverser) HandleMissingChildNodes(count uint8, depth uint32) {
-    t.result = append(t.result, taggedNode{Node{t.missingChildrenProxy, uint32(count)}, depth, false})
-}
-
-func (*missingChildrenProxy) GetDisplayName(uint32) string {
-    return ""
-}
-
-func (m *missingChildrenProxy) GetDebugName(reference uint32) string {
-    return fmt.Sprintf("%d missing", reference)
-}
-
-func (m *missingChildrenProxy) GetChildCount() uint8 {
-    return 0
+    t.result = append(t.result, taggedNode{node, depth})
 }

@@ -137,7 +137,7 @@ func TestMissingEndNodeNested(t *testing.T) {
                 "  Variable2\n" +
                 "    Zero\n" +
                 "    Zero\n" +
-                "  Incorrect EndNode Variable1\n"
+                "  Incorrect EndNode Reference=4 NodeType(Reference)=Variable1\n"
 
     actual := ta.d.Display(ast)
 
@@ -155,7 +155,7 @@ func TestEndNodeInFixedChildrenNode(t *testing.T) {
     }
 
     expected := "One\n" +
-                "  EndNode Variable1 in fixed childcount Node\n"
+                "  Unexpected EndNode Reference=4 NodeType(Reference)=Variable1\n"
 
     actual := ta.d.Display(ast)
 
@@ -173,8 +173,8 @@ func TestUnknownEndNodeReference(t *testing.T) {
     }
 
     expected := "Variable1\n" +
-                "Incorrect EndNode UNKNOWN Reference=100\n" +
-                "EndNode UNKNOWN Reference=100 not inside a Node\n"
+                "Incorrect EndNode Reference=100\n" +
+                "Unexpected EndNode Reference=100\n"
 
     actual := ta.d.Display(ast)
 
