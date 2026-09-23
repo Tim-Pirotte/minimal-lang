@@ -183,11 +183,7 @@ func TestUnknownEndNodeReference(t *testing.T) {
     }
 }
 
-func TestCustomDisplay(t *testing.T) {
-
-}
-
-func TestDiff(t *testing.T) {
+func TestDiffFixed(t *testing.T) {
     ta := getTestAST()
 
     before := []Node{
@@ -233,6 +229,73 @@ func TestDiff(t *testing.T) {
                 "  - Zero\n" +
                 "  + Zero Reference=1\n" +
                 "    Zero\n"
+
+    ta.d.OutputANSI = false
+    actual := ta.d.DisplayDiff(before, after)
+
+    if actual != expected {
+        t.Errorf("\nExpected:\n%sGot:\n%s", expected, actual)
+    }
+}
+
+func TestDiffVariable(t *testing.T) {
+    ta := getTestAST()
+
+    before := []Node{
+        {ta.firstVariableChildren, 0},
+            {ta.secondVariableChildren, 0},
+                {ta.zeroChildren, 0},
+                {ta.oneChild, 0},
+                    {ta.zeroChildren, 0},
+            {EndNode, uint32(ta.secondVariableChildren)},
+        {EndNode, uint32(ta.firstVariableChildren)},
+    }
+
+    after := []Node{
+        {ta.firstVariableChildren, 0},
+            {ta.zeroChildren, 0},
+            {ta.oneChild, 0},
+                {ta.zeroChildren, 0},
+        {EndNode, uint32(ta.firstVariableChildren)},
+    }
+
+    expected := "  Variable1\n" +
+                "  - Variable2\n" +
+                "    Zero\n" +
+                "    One\n" +
+                "      Zero\n"
+
+    ta.d.OutputANSI = false
+    actual := ta.d.DisplayDiff(before, after)
+
+    if actual != expected {
+        t.Errorf("\nExpected:\n%sGot:\n%s", expected, actual)
+    }
+}
+
+// TODO this produces confusing output
+func TestDiffSwapped(t *testing.T) {
+    ta := getTestAST()
+
+    before := []Node{
+        {ta.oneChild, 0},
+            {ta.zeroChildren, 0},
+        {ta.oneChild, 0},
+            {ta.zeroChildren, 1},
+    }
+
+    after := []Node{
+        {ta.oneChild, 0},
+            {ta.zeroChildren, 1},
+        {ta.oneChild, 0},
+            {ta.zeroChildren, 0},
+    }
+
+    expected := "  Variable1\n" +
+                "  - Variable2\n" +
+                "    Zero\n" +
+                "    One\n" +
+                "      Zero\n"
 
     ta.d.OutputANSI = false
     actual := ta.d.DisplayDiff(before, after)

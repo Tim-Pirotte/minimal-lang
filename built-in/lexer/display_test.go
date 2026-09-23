@@ -81,8 +81,8 @@ func TestDiff(t *testing.T) {
         l2.Advance()
     }
 
-    expected := " - UNKNOWN              \"a\"                       0..1      (1)\n" +
-                " + UNKNOWN              \"b\"                       1..2      (1)\n"
+    expected := "- UNKNOWN              \"a\"                       0..1      (1)\n" +
+                "+ UNKNOWN              \"b\"                       1..2      (1)\n"
 
     actual := d.DisplayDiff(source, tokens1, tokens2)
 
@@ -115,8 +115,8 @@ func TestColoredDiff(t *testing.T) {
         l2.Advance()
     }
 
-    expected := "\x1b[38;2;245;5;61m - \x1b[0mUNKNOWN              \"a\"                       0..1      (1)\n" +
-                "\x1b[38;2;121;245;5m + \x1b[0mUNKNOWN              \"b\"                       1..2      (1)\n"
+    expected := "\x1b[38;2;245;5;61m- \x1b[0mUNKNOWN              \"a\"                       0..1      (1)\n" +
+                "\x1b[38;2;121;245;5m+ \x1b[0mUNKNOWN              \"b\"                       1..2      (1)\n"
 
     actual := d.DisplayDiff(source, tokens1, tokens2)
 
@@ -151,9 +151,9 @@ func TestMultiSourceDiff(t *testing.T) {
         l2.Advance()
     }
 
-    expected := " - UNKNOWN              \"a\"                       0..1      (1)\n" +
-                " + UNKNOWN              \"b\"                       0..1      (1)\n" +
-                "   UNKNOWN              \"a\"                       1..2      (1)\n"
+    expected := "- UNKNOWN              \"a\"                       0..1      (1)\n" +
+                "+ UNKNOWN              \"b\"                       0..1      (1)\n" +
+                "  UNKNOWN              \"a\"                       1..2      (1)\n"
 
     actual := d.DisplayMultiSourceDiff(source1, source2, tokens1, tokens2)
 
