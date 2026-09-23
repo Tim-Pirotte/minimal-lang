@@ -49,8 +49,8 @@ func (d *Displayer) DisplayDiff(before, after []Node) string {
 
     d.traverserSchema.Traverse(&t, before)
     taggedBefore := t.result
-    t.result = []taggedNode{}
 
+    t.result = []taggedNode{}
     d.traverserSchema.Traverse(&t, after)
     taggedAfter := t.result
 

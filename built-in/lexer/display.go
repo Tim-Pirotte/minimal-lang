@@ -52,17 +52,17 @@ func (d *Displayer) DisplayMultiSourceDiff(
 
     for _, diffPart := range tokenDiff {
         source := sourceAfter
-        prefix := "   "
+        prefix := "  "
 
         switch diffPart.Type {
         case diff.Insert:
-            prefix = " + "
+            prefix = "+ "
 
             if d.OutputANSI {
                 prefix = ansi.RGB{R: 121, G: 245, B: 5}.ToString() + prefix + ansi.Reset
             }
         case diff.Delete:
-            prefix = " - "
+            prefix = "- "
             source = sourceBefore
 
             if d.OutputANSI {
