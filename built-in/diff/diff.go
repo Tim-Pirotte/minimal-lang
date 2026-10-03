@@ -33,11 +33,12 @@ func GetDiff[T any](a, b []T, isEqual func(T, T) bool) []DiffPart[T] {
 	backwardVisited := map[coord]coord{end: {}}
 
 	front := []coord{start}
+	nextFront := []coord{}
+
 	inverseFront := []coord{end}
+	nextInverseFront := []coord{}
 
 	for range len(a) + len(b) {
-		newFront := []coord{}
-
 		for _, value := range front {
 			snaked := value
 
@@ -48,7 +49,7 @@ func GetDiff[T any](a, b []T, isEqual func(T, T) bool) []DiffPart[T] {
 
 			if snaked != value {
 				if _, found := forwardVisited[snaked]; !found {
-					newFront = append(newFront, snaked)
+					nextFront = append(nextFront, snaked)
 					forwardVisited[snaked] = value
 				}
 
@@ -61,7 +62,7 @@ func GetDiff[T any](a, b []T, isEqual func(T, T) bool) []DiffPart[T] {
 				coord := coord{snaked.x + 1, snaked.y}
 
 				if _, found := forwardVisited[coord]; !found {
-					newFront = append(newFront, coord)
+					nextFront = append(nextFront, coord)
 					forwardVisited[coord] = snaked
 				}
 
@@ -74,7 +75,7 @@ func GetDiff[T any](a, b []T, isEqual func(T, T) bool) []DiffPart[T] {
 				coord := coord{snaked.x, snaked.y + 1}
 
 				if _, found := forwardVisited[coord]; !found {
-					newFront = append(newFront, coord)
+					nextFront = append(nextFront, coord)
 					forwardVisited[coord] = snaked
 				}
 
@@ -84,9 +85,8 @@ func GetDiff[T any](a, b []T, isEqual func(T, T) bool) []DiffPart[T] {
 			}
 		}
 
-		front = newFront
-
-		newInverseFront := []coord{}
+		front = front[:0]
+		front, nextFront = nextFront, front
 
 		for _, value := range inverseFront {
 			snaked := value
@@ -98,7 +98,7 @@ func GetDiff[T any](a, b []T, isEqual func(T, T) bool) []DiffPart[T] {
 
 			if snaked != value {
 				if _, found := backwardVisited[snaked]; !found {
-					newInverseFront = append(newInverseFront, snaked)
+					nextInverseFront = append(nextInverseFront, snaked)
 					backwardVisited[snaked] = value
 				}
 
@@ -111,7 +111,7 @@ func GetDiff[T any](a, b []T, isEqual func(T, T) bool) []DiffPart[T] {
 				coord := coord{snaked.x, snaked.y - 1}
 
 				if _, found := backwardVisited[coord]; !found {
-					newInverseFront = append(newInverseFront, coord)
+					nextInverseFront = append(nextInverseFront, coord)
 					backwardVisited[coord] = snaked
 				}
 
@@ -124,7 +124,7 @@ func GetDiff[T any](a, b []T, isEqual func(T, T) bool) []DiffPart[T] {
 				coord := coord{snaked.x - 1, snaked.y}
 
 				if _, found := backwardVisited[coord]; !found {
-					newInverseFront = append(newInverseFront, coord)
+					nextInverseFront = append(nextInverseFront, coord)
 					backwardVisited[coord] = snaked
 				}
 
@@ -134,7 +134,8 @@ func GetDiff[T any](a, b []T, isEqual func(T, T) bool) []DiffPart[T] {
 			}
 		}
 
-		inverseFront = newInverseFront
+		inverseFront = inverseFront[:0]
+		inverseFront, nextInverseFront = nextInverseFront, inverseFront
 	}
 
 	return []DiffPart[T]{}
