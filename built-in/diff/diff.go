@@ -2,10 +2,6 @@
 
 package diff
 
-import (
-	"slices"
-)
-
 type PartType int
 
 const (
@@ -147,42 +143,77 @@ func getPath[T any](
 	forwardVisited, backwardVisited map[coord]coord,
 	start, end coord,
 ) []DiffPart[T] {
-	commonToStart := []DiffPart[T]{}
-	commonToEnd := []DiffPart[T]{}
+	forwardLength := 0
+
+	for coord := commonCoord; coord != start; {
+		parent := forwardVisited[coord]
+
+		if coord.x != parent.x && coord.y != parent.y {
+			forwardLength += coord.y - parent.y
+		} else {
+			forwardLength++
+		}
+
+		coord = parent
+	}
+
+	backwardLength := 0
+
+	for coord := commonCoord; coord != end; {
+		parent := backwardVisited[coord]
+
+		if coord.x != parent.x && coord.y != parent.y {
+			backwardLength += parent.y - coord.y
+		} else {
+			backwardLength++
+		}
+
+		coord = parent
+	}
+
+	result := make([]DiffPart[T], forwardLength + backwardLength)
+
+	pos := forwardLength - 1
 
 	for coord := commonCoord; coord != start; {
 		parent := forwardVisited[coord]
 
 		if coord.x != parent.x && coord.y != parent.y {
 			for i := coord.y - parent.y - 1; i >= 0; i-- {
-				commonToStart = append(commonToStart, DiffPart[T]{Equal, b[parent.y + i]})
+				result[pos] = DiffPart[T]{Equal, b[parent.y + i]}
+				pos--
 			}
 		} else if coord.x != parent.x {
-			commonToStart = append(commonToStart, DiffPart[T]{Delete, a[parent.x]})
+			result[pos] = DiffPart[T]{Delete, a[parent.x]}
+			pos--
 		} else {
-			commonToStart = append(commonToStart, DiffPart[T]{Insert, b[parent.y]})
+			result[pos] = DiffPart[T]{Insert, b[parent.y]}
+			pos--
 		}
 
 		coord = parent
 	}
+
+	pos = forwardLength
 
 	for coord := commonCoord; coord != end; {
 		parent := backwardVisited[coord]
 
 		if coord.x != parent.x && coord.y != parent.y {
 			for i := 0; i < parent.y - coord.y; i++ {
-				commonToEnd = append(commonToEnd, DiffPart[T]{Equal, b[coord.y + i]})
+				result[pos] = DiffPart[T]{Equal, b[coord.y + i]}
+				pos++
 			}
 		} else if coord.x != parent.x {
-			commonToEnd = append(commonToEnd, DiffPart[T]{Delete, a[parent.x - 1]})
+			result[pos] = DiffPart[T]{Delete, a[parent.x - 1]}
+			pos++
 		} else {
-			commonToEnd = append(commonToEnd, DiffPart[T]{Insert, b[parent.y - 1]})
+			result[pos] = DiffPart[T]{Insert, b[parent.y - 1]}
+			pos++
 		}
 
 		coord = parent
 	}
 
-	slices.Reverse(commonToStart)
-
-	return append(commonToStart, commonToEnd...)
+	return result
 }
