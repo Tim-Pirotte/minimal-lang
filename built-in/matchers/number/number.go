@@ -9,10 +9,11 @@ package numbers
 // Base digits are case sensitive (uppercase), base specifiers too (lowercase)
 // Do we allow utf-8 digits?
 
-import (
-	"minimal/minimal-lang/built-in/lexer"
-	"minimal/minimal-lang/built-in/matchers/indentation"
-)
+// TODO this wont work, it will consume everything else. We need some sort of valid range
+
+import "minimal/minimal-lang/built-in/lexer"
+
+const asciiMax = 127
 
 type NumberMatcher struct {
 	tokenType lexer.TokenType
@@ -33,7 +34,7 @@ func (n *NumberMatcher) Match(l *lexer.Lexer) uint32 {
 
 	pos := uint32(1)
 
-	for c, ok := l.Get(pos); ok && c != ' ' && !indentation.IsEOL(c); c, ok = l.Get(pos) {
+	for c, ok := l.Get(pos); ok && '0' <= c && c <= '9' || 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || c > asciiMax || c == '_'; c, ok = l.Get(pos) {
 		pos++
 	}
 

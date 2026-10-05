@@ -47,7 +47,7 @@ func TestMixed(t *testing.T) {
 }
 
 func TestNonDigits(t *testing.T) {
-	source := "0_&a 9!"
+	source := "0_ba 9_"
 
 	l, numberType := getLexer()
 
@@ -72,6 +72,16 @@ func TestEndOfLine(t *testing.T) {
 		{Type: lexer.UNKNOWN, Value: source[3:4]},
 		{Type: numberType, Value: source[4:5]},
 	}
+
+	lexer.CheckTokens(t, l, expected, source)
+}
+
+func TestUnicode(t *testing.T) {
+	source := "0🔥"
+
+	l, numberType := getLexer()
+
+	expected := []lexer.Token{{Type: numberType, Value: source},}
 
 	lexer.CheckTokens(t, l, expected, source)
 }
