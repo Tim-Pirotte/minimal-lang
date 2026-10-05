@@ -1,5 +1,14 @@
 package numberparser
 
+// if first digit is 0:
+//   if second digit:
+//     if second char is valid base: (0-9 and _ reserved for decimal)
+//       parse base
+//     else:
+//       error invalid base
+//   else:
+///    parse decimal
+
 import (
 	"fmt"
 	"math"
@@ -8,8 +17,6 @@ import (
 	"minimal/minimal-lang/built-in/lexer"
 	"minimal/minimal-lang/built-in/parsers/prattparser"
 )
-
-// TODO this could be ambiguous with units (e.g. 0 x with x defined as a type)
 
 type NumberParser struct {
     baseParsers    map[byte]baseParser

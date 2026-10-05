@@ -1,5 +1,14 @@
 package numbers
 
+// TODO format:
+// First char is digit?
+// If so keep lexing undtil the next space
+// We will only check the rules during parsing so other matchers
+// Can also lex sequences that start with a digit but would be invalid numeric literals
+
+// Base digits are case sensitive (uppercase), base specifiers too (lowercase)
+// Do we allow utf-8 digits?
+
 import (
 	"minimal/minimal-lang/built-in/lexer"
 )

@@ -273,7 +273,6 @@ func TestDiffVariable(t *testing.T) {
     }
 }
 
-// TODO this produces confusing output
 func TestDiffSwapped(t *testing.T) {
     ta := getTestAST()
 
@@ -291,11 +290,12 @@ func TestDiffSwapped(t *testing.T) {
             {ta.zeroChildren, 0},
     }
 
-    expected := "  Variable1\n" +
-                "  - Variable2\n" +
-                "    Zero\n" +
-                "    One\n" +
-                "      Zero\n"
+    expected := "  One\n" +
+                "  - Zero\n" +
+                "- One\n" +
+                "    Zero Reference=1\n" +
+                "+ One\n" +
+                "  + Zero\n"
 
     ta.d.OutputANSI = false
     actual := ta.d.DisplayDiff(before, after)
