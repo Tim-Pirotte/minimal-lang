@@ -11,6 +11,7 @@ package numbers
 
 import (
 	"minimal/minimal-lang/built-in/lexer"
+	"minimal/minimal-lang/built-in/matchers/indentation"
 )
 
 type NumberMatcher struct {
@@ -26,9 +27,13 @@ func (n *NumberMatcher) New(_ *lexer.Lexer) lexer.Matcher {
 }
 
 func (n *NumberMatcher) Match(l *lexer.Lexer) uint32 {
-	pos := uint32(0)
+	if c, _ := l.Get(0); c < '0' || c > '9' {
+		return 0
+	}
 
-	for c, ok := l.Get(pos); ok && '0' <= c && c <= '9'; c, ok = l.Get(pos) {
+	pos := uint32(1)
+
+	for c, ok := l.Get(pos); ok && c != ' ' && !indentation.IsEOL(c); c, ok = l.Get(pos) {
 		pos++
 	}
 
