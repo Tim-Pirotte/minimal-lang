@@ -37,30 +37,12 @@ func (d *DecimalMatcher) New(_ *lexer.Lexer) lexer.Matcher {
 
 func (d *DecimalMatcher) Match(l *lexer.Lexer) uint32 {
 	pos := uint32(0)
-    previousWasUnderScore := false
 
     c, ok := l.Get(pos)
-    posBefore := pos
 
 	for ; ok && ('0' <= c && c <= '9' || c == '_'); c, ok = l.Get(pos) {
-        if c == '_' {
-            if pos == posBefore {
-                panic("integer starts with _")
-            } else if previousWasUnderScore {
-                // TODO error
-                // Errors should be accumulated for the consume
-                panic("already _ in whole part")
-            }
-        }
-
-        previousWasUnderScore = c == '_'
         pos++
 	}
-
-    if previousWasUnderScore {
-        // TODO error
-        panic("whole ended on _")
-    }
 
     if !ok || c != '.' {
         if ok && c == 'e' {
@@ -75,28 +57,8 @@ func (d *DecimalMatcher) Match(l *lexer.Lexer) uint32 {
                 d.matchedType = d.wholeExponent
             }
 
-            posBefore = pos
-            previousWasUnderScore = false
-
             for ; ok && ('0' <= c && c <= '9' || c == '_'); c, ok = l.Get(pos) {
-                if c == '_' {
-                    if pos == posBefore {
-                        panic("whole exponent part starts with _")
-                    } else if previousWasUnderScore {
-                        panic("already _ in whole exponent part")
-                    }
-                }
-
-                previousWasUnderScore = c == '_'
                 pos++
-            }
-
-            if previousWasUnderScore {
-                panic("whole exponent ended on _")
-            }
-
-            if pos == posBefore {
-                panic("nothing after e or - (whole)")
             }
 
             return pos
@@ -108,29 +70,10 @@ func (d *DecimalMatcher) Match(l *lexer.Lexer) uint32 {
     }
 
     pos++
-    posBefore = pos
-    previousWasUnderScore = false
 
     for c, ok = l.Get(pos); ok && ('0' <= c && c <= '9' || c == '_'); c, ok = l.Get(pos) {
-		if c == '_' {
-            if pos == posBefore {
-                panic("fractional parts starts with _")
-            } else if previousWasUnderScore {
-                panic("already _ in fractional part")
-            }
-        }
-
-        previousWasUnderScore = c == '_'
         pos++
 	}
-
-    if previousWasUnderScore {
-        panic("fractional ended on _")
-    }
-
-    if pos == posBefore {
-        panic("nothing after .")
-    }
 
     if !ok || c != 'e' {
         d.matchedType = d.fraction
@@ -149,29 +92,9 @@ func (d *DecimalMatcher) Match(l *lexer.Lexer) uint32 {
         d.matchedType = d.fractionExponent
     }
 
-    posBefore = pos
-    previousWasUnderScore = false
-
     for ; ok && ('0' <= c && c <= '9' || c == '_'); c, ok = l.Get(pos) {
-		if c == '_' {
-            if pos == posBefore {
-                panic("exponent part starts with _")
-            } else if previousWasUnderScore {
-                panic("already _ in exponent part")
-            }
-        }
-
-        previousWasUnderScore = c == '_'
         pos++
 	}
-
-    if previousWasUnderScore {
-        panic("exponent ended on _")
-    }
-
-    if pos == posBefore {
-        panic("nothing after e or -")
-    }
 
 	return pos
 }
