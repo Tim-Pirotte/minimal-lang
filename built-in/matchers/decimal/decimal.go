@@ -37,29 +37,20 @@ func (d *DecimalMatcher) New(_ *lexer.Lexer) lexer.Matcher {
 
 func (d *DecimalMatcher) Match(l *lexer.Lexer) uint32 {
 	pos := uint32(0)
+	pos = skipDigits(l, pos)
 
-    c, ok := l.Get(pos)
-
-	for ; ok && ('0' <= c && c <= '9' || c == '_'); c, ok = l.Get(pos) {
-        pos++
-	}
-
-    if !ok || c != '.' {
+    if c, ok := l.Get(pos); !ok || c != '.' {
         if ok && c == 'e' {
             pos++
 
             if c, ok = l.Get(pos); c == '-' {
                 pos++
-                c, ok = l.Get(pos)
-
                 d.matchedType = d.wholeNegativeExponent
             } else {
                 d.matchedType = d.wholeExponent
             }
 
-            for ; ok && ('0' <= c && c <= '9' || c == '_'); c, ok = l.Get(pos) {
-                pos++
-            }
+            pos = skipDigits(l, pos)
 
             return pos
         }
@@ -70,12 +61,9 @@ func (d *DecimalMatcher) Match(l *lexer.Lexer) uint32 {
     }
 
     pos++
+    pos = skipDigits(l, pos)
 
-    for c, ok = l.Get(pos); ok && ('0' <= c && c <= '9' || c == '_'); c, ok = l.Get(pos) {
-        pos++
-	}
-
-    if !ok || c != 'e' {
+    if c, ok := l.Get(pos); !ok || c != 'e' {
         d.matchedType = d.fraction
 
         return pos
@@ -83,22 +71,26 @@ func (d *DecimalMatcher) Match(l *lexer.Lexer) uint32 {
 
     pos++
 
-    if c, ok = l.Get(pos); c == '-' {
+    if c, ok := l.Get(pos); ok && c == '-' {
         pos++
-        c, ok = l.Get(pos)
-    
         d.matchedType = d.fractionNegativeExponent
     } else {
         d.matchedType = d.fractionExponent
     }
 
-    for ; ok && ('0' <= c && c <= '9' || c == '_'); c, ok = l.Get(pos) {
-        pos++
-	}
+    pos = skipDigits(l, pos)
 
 	return pos
 }
 
 func (d *DecimalMatcher) Consume(l *lexer.Lexer, length uint32) {
 	l.Emit(lexer.Token{Type: d.matchedType, Value: l.GetNextN(length)})
+}
+
+func skipDigits(l *lexer.Lexer, pos uint32) uint32 {
+    for c, ok := l.Get(pos); ok && ('0' <= c && c <= '9' || c == '_'); c, ok = l.Get(pos) {
+        pos++
+	}
+
+    return pos
 }

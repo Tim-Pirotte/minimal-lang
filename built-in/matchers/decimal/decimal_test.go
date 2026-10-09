@@ -139,7 +139,7 @@ func TestFloatNegativeExponent(t *testing.T) {
 }
 
 func TestIntUnderscores(t *testing.T) {
-	source := "0_1_2_3_4_5_6_7_8_9"
+	source := "_0__1_2_3_4_5_6_7_8_9_"
 
 	l, intType, _, _, _, _, _ := getLexer()
 
@@ -151,7 +151,7 @@ func TestIntUnderscores(t *testing.T) {
 }
 
 func TestFloatUnderscores(t *testing.T) {
-	source := "0_1_2_3_4_5_6_7_8_9.0_1_2_3_4_5_6_7_8_9"
+	source := "_0__1_2_3_4_5_6_7_8_9.0_1_2_3_4_5_6_7_8_9_"
 
 	l, _, _, _, floatType, _, _ := getLexer()
 
