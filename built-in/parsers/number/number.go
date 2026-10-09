@@ -1,14 +1,5 @@
 package numberparser
 
-// if first digit is 0:
-//   if second digit:
-//     if second char is valid base: (0-9 and _ reserved for decimal)
-//       parse base
-//     else:
-//       error invalid base
-//   else:
-///    parse decimal
-
 import (
 	"fmt"
 	"math"

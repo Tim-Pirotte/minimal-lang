@@ -1,15 +1,20 @@
 package numbers
 
-// TODO format:
-// First char is digit?
-// If so keep lexing undtil the next space
-// We will only check the rules during parsing so other matchers
-// Can also lex sequences that start with a digit but would be invalid numeric literals
-
-// Base digits are case sensitive (uppercase), base specifiers too (lowercase)
-// Do we allow utf-8 digits?
-
-// TODO this wont work, it will consume everything else. We need some sort of valid range
+// Maybe we should do all text processing during lexing
+// so that the parses doesnt need to load source anymore
+// That would mean we handle bases in the lexer
+// We should just match the first char on a digit 0-9
+// Then we get the next char and if the first char was 0 the next should be a base
+// If not we just create a decimal int with value 0
+// Otherwise for every following char we call a boolean function on it via an interface
+// After int parsing we check if the next char is a . and if so we repeat the process to produce a float
+// The base should not be respecified for a float.
+// After parsing the second int we check for a floating point scientific notation prefix
+// If that exists we check for - and then we parse another int
+// Al of these should produce tokens. Per integer base a different token but one for float
+// and one for scientific notation
+// _ should be skipped during int parsing automatically but we shouldnt allow it at the end or multiple times
+// After error production we should skip the invalid _'s.
 
 import "minimal/minimal-lang/built-in/lexer"
 
@@ -34,7 +39,7 @@ func (n *NumberMatcher) Match(l *lexer.Lexer) uint32 {
 
 	pos := uint32(1)
 
-	for c, ok := l.Get(pos); ok && '0' <= c && c <= '9' || 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || c > asciiMax || c == '_'; c, ok = l.Get(pos) {
+	for c, ok := l.Get(pos); ok && '0' <= c && c <= '9' || 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || c > asciiMax || c == '_' || c == '.'; c, ok = l.Get(pos) {
 		pos++
 	}
 
