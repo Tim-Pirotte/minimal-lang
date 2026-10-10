@@ -32,12 +32,19 @@ func New(
 }
 
 func (d *DecimalMatcher) New(_ *lexer.Lexer) lexer.Matcher {
-	return d
+	return &DecimalMatcher{
+        d.whole, 
+        d.wholeExponent, 
+        d.wholeNegativeExponent, 
+        d.fraction, 
+        d.fractionExponent, 
+        d.fractionNegativeExponent,
+        d.whole,
+    }
 }
 
 func (d *DecimalMatcher) Match(l *lexer.Lexer) uint32 {
-	pos := uint32(0)
-	pos = skipDigits(l, pos)
+	pos := skipDigits(l, 0)
 
     if c, ok := l.Get(pos); !ok || c != '.' {
         if ok && c == 'e' {
@@ -60,8 +67,7 @@ func (d *DecimalMatcher) Match(l *lexer.Lexer) uint32 {
         return pos
     }
 
-    pos++
-    pos = skipDigits(l, pos)
+    pos = skipDigits(l, pos + 1)
 
     if c, ok := l.Get(pos); !ok || c != 'e' {
         d.matchedType = d.fraction
