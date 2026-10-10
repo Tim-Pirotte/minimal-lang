@@ -269,3 +269,73 @@ func TestMissingFloatNegativeExponent(t *testing.T) {
 
 	lexer.CheckTokens(t, l, expected, source)
 }
+
+func TestDigitBounds(t *testing.T) {
+    source := "/" + ":" + "0e/" + "0e:" + "0e-/" + "0e-:" + "0./" + 
+			  "0.:" + "0.e/" + "0.e:" + "0.e-/" + "0.e-:"
+
+	l, _, intExpType, intNegExpType, floatType, floatExpType, floatNegExpType := getLexer()
+
+	expected := []lexer.Token{
+        {Type: lexer.UNKNOWN, Value: source[:1]},
+        {Type: lexer.UNKNOWN, Value: source[1:2]},
+		{Type: intExpType, Value: source[2:4]},
+        {Type: lexer.UNKNOWN, Value: source[4:5]},
+		{Type: intExpType, Value: source[5:7]},
+        {Type: lexer.UNKNOWN, Value: source[7:8]},
+		{Type: intNegExpType, Value: source[8:11]},
+        {Type: lexer.UNKNOWN, Value: source[11:12]},
+		{Type: intNegExpType, Value: source[12:15]},
+        {Type: lexer.UNKNOWN, Value: source[15:16]},
+		{Type: floatType, Value: source[16:18]},
+        {Type: lexer.UNKNOWN, Value: source[18:19]},
+		{Type: floatType, Value: source[19:21]},
+        {Type: lexer.UNKNOWN, Value: source[21:22]},
+		{Type: floatExpType, Value: source[22:25]},
+        {Type: lexer.UNKNOWN, Value: source[25:26]},
+		{Type: floatExpType, Value: source[26:29]},
+        {Type: lexer.UNKNOWN, Value: source[29:30]},
+		{Type: floatNegExpType, Value: source[30:34]},
+        {Type: lexer.UNKNOWN, Value: source[34:35]},
+		{Type: floatNegExpType, Value: source[35:39]},
+        {Type: lexer.UNKNOWN, Value: source[39:40]},
+    }
+
+	lexer.CheckTokens(t, l, expected, source)
+}
+
+func TestNoLeadingUnderscore(t *testing.T) {
+	source := "_"
+
+	l, _, _, _, _, _, _ := getLexer()
+
+	expected := []lexer.Token{
+		{Type: lexer.UNKNOWN, Value: source},
+	}
+
+	lexer.CheckTokens(t, l, expected, source)
+}
+
+func TestNoLeadingDot(t *testing.T) {
+	source := "."
+
+	l, _, _, _, _, _, _ := getLexer()
+
+	expected := []lexer.Token{
+		{Type: lexer.UNKNOWN, Value: source},
+	}
+
+	lexer.CheckTokens(t, l, expected, source)
+}
+
+func TestNoLeadingE(t *testing.T) {
+	source := "e"
+
+	l, _, _, _, _, _, _ := getLexer()
+
+	expected := []lexer.Token{
+		{Type: lexer.UNKNOWN, Value: source},
+	}
+
+	lexer.CheckTokens(t, l, expected, source)
+}

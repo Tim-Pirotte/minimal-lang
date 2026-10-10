@@ -2,6 +2,8 @@ package decimalmatcher
 
 import "minimal/minimal-lang/built-in/lexer"
 
+// TODO don't match on leading '_'s or '.'s or 'e's
+
 type DecimalMatcher struct {
 	whole                    lexer.TokenType
     wholeExponent            lexer.TokenType
