@@ -46,7 +46,11 @@ func (d *DecimalMatcher) New(_ *lexer.Lexer) lexer.Matcher {
 }
 
 func (d *DecimalMatcher) Match(l *lexer.Lexer) uint32 {
-	pos := skipDigits(l, 0)
+	if c, _ := l.Get(0); !('0' <= c && c <= '9') {
+        return 0
+    }
+    
+    pos := skipDigits(l, 1)
 
     if c, ok := l.Get(pos); !ok || c != '.' {
         if ok && c == 'e' {
