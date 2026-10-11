@@ -51,22 +51,22 @@ func (d *DecimalMatcher) Match(l *lexer.Lexer) uint32 {
     pos := skipDigits(l, 1)
 
     if c, ok := l.Get(pos); !ok || c != '.' {
-        if ok && c == 'e' {
-            pos++
-
-            if c, ok = l.Get(pos); c == '-' {
-                pos++
-                d.matchedType = d.wholeNegativeExponent
-            } else {
-                d.matchedType = d.wholeExponent
-            }
-
-            pos = skipDigits(l, pos)
+        if !ok || c != 'e' {
+            d.matchedType = d.whole
 
             return pos
         }
 
-        d.matchedType = d.whole
+        pos++
+
+        if c, ok = l.Get(pos); c == '-' {
+            pos++
+            d.matchedType = d.wholeNegativeExponent
+        } else {
+            d.matchedType = d.wholeExponent
+        }
+
+        pos = skipDigits(l, pos)
 
         return pos
     }
