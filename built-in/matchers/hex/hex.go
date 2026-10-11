@@ -12,6 +12,25 @@ type HexMatcher struct {
 	matchedType              lexer.TokenType
 }
 
+func New(
+    whole, 
+    wholeExponent, 
+    wholeNegativeExponent, 
+    fraction, 
+    fractionExponent, 
+    fractionNegativeExponent lexer.TokenType,
+) *HexMatcher {
+	return &HexMatcher{
+        whole, 
+        wholeExponent, 
+        wholeNegativeExponent, 
+        fraction, 
+        fractionExponent, 
+        fractionNegativeExponent,
+        whole,
+    }
+}
+
 func (h *HexMatcher) New(_ *lexer.Lexer) lexer.Matcher {
 	return &HexMatcher{
         h.whole, 
