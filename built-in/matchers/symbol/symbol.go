@@ -1,7 +1,6 @@
 package symbols
 
 import (
-	"fmt"
 	"minimal/minimal-lang/built-in/lexer"
 )
 
@@ -29,7 +28,7 @@ func (s *SymbolMatcher) New(_ *lexer.Lexer) lexer.Matcher {
 	return s
 }
 
-func (s *SymbolMatcher) AddSymbol(l *lexer.LexerScheme, symbol string, tokenType lexer.TokenType) {
+func (s *SymbolMatcher) AddSymbol(l *lexer.LexerScheme, symbol string, tokenType lexer.TokenType) bool {
 	node := s.symbols
 
 	for _, char := range []byte(symbol) {
@@ -41,12 +40,13 @@ func (s *SymbolMatcher) AddSymbol(l *lexer.LexerScheme, symbol string, tokenType
     }
 
 	if node.leaf {
-		// TODO log error message or panic
-		fmt.Printf("'%v' has already been declared", symbol)
+		return false
 	}
 
 	node.leaf = true
 	node.tokenType = tokenType
+
+	return true
 }
 
 func (s *SymbolMatcher) Match(l *lexer.Lexer) uint32 {
