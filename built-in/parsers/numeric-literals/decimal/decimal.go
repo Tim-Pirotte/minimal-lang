@@ -12,31 +12,37 @@ type number []uint
 
 type WholeParser struct {
 	tokenType lexer.TokenType
+	nodeType  ast.NodeType
 	numbers   []number
 }
 
 type WholeExponentParser struct {
     tokenType lexer.TokenType
+	nodeType  ast.NodeType
 	numbers   []wholeExponent
 }
 
 type WholeNegativeExponentParser struct {
 	tokenType lexer.TokenType
+	nodeType  ast.NodeType
     numbers   []wholeExponent
 }
 
 type FractionParser struct {
     tokenType lexer.TokenType
+	nodeType  ast.NodeType
 	numbers   []fraction
 }
 
 type FractionExponentParser struct {
 	tokenType lexer.TokenType
+	nodeType  ast.NodeType
     numbers   []fractionExponent
 }
 
 type FractionNegativeExponentParser struct {
 	tokenType lexer.TokenType
+	nodeType  ast.NodeType
     numbers   []fractionExponent
 }
 
@@ -55,29 +61,38 @@ type fractionExponent struct {
 	exponent number
 }
 
-func NewWholeParser(tokenType lexer.TokenType) *WholeParser {
+func NewWholeParser(tokenType lexer.TokenType, nodeType ast.NodeType) *WholeParser {
 	// These are initialized lazily
-    return &WholeParser{tokenType, nil}
+    return &WholeParser{tokenType, nodeType, nil}
 }
 
-func NewWholeExponentParser(tokenType lexer.TokenType) *WholeExponentParser {
-	return &WholeExponentParser{tokenType, nil}
+func NewWholeExponentParser(tokenType lexer.TokenType, nodeType ast.NodeType) *WholeExponentParser {
+	return &WholeExponentParser{tokenType, nodeType, nil}
 }
 
-func NewWholeNegativeExponentParser(tokenType lexer.TokenType) *WholeNegativeExponentParser {
-	return &WholeNegativeExponentParser{tokenType, nil}
+func NewWholeNegativeExponentParser(
+	tokenType lexer.TokenType, 
+	nodeType ast.NodeType,
+) *WholeNegativeExponentParser {
+	return &WholeNegativeExponentParser{tokenType, nodeType, nil}
 }
 
-func NewFractionParser(tokenType lexer.TokenType) *FractionParser {
-	return &FractionParser{tokenType, nil}
+func NewFractionParser(tokenType lexer.TokenType, nodeType ast.NodeType) *FractionParser {
+	return &FractionParser{tokenType, nodeType, nil}
 }
 
-func NewFractionExponentParser(tokenType lexer.TokenType) *FractionExponentParser {
-	return &FractionExponentParser{tokenType, nil}
+func NewFractionExponentParser(
+	tokenType lexer.TokenType, 
+	nodeType ast.NodeType,
+) *FractionExponentParser {
+	return &FractionExponentParser{tokenType, nodeType, nil}
 }
 
-func NewFractionNegativeExponentParser(tokenType lexer.TokenType) *FractionNegativeExponentParser {
-	return &FractionNegativeExponentParser{tokenType, nil}
+func NewFractionNegativeExponentParser(
+	tokenType lexer.TokenType, 
+	nodeType ast.NodeType,
+) *FractionNegativeExponentParser {
+	return &FractionNegativeExponentParser{tokenType, nodeType, nil}
 }
 
 func (w *WholeParser) GetTokenType() lexer.TokenType {
@@ -106,7 +121,9 @@ func (w *WholeParser) ParsePrefix(_ *prattparser.PrattParser, l *lexer.Lexer, mi
 		// TODO error
 	}
 
-	return []ast.Node{}
+	w.numbers = append(w.numbers, number)
+
+	return []ast.Node{{Type: w.nodeType, Reference: uint32(len(w.numbers)) - 1}}
 }
 
 func (w *WholeExponentParser) GetTokenType() lexer.TokenType {
