@@ -1,6 +1,8 @@
 package decimalparser
 
 import (
+	"fmt"
+	"math/bits"
 	"minimal/minimal-lang/built-in/ast"
 	"minimal/minimal-lang/built-in/lexer"
 	"minimal/minimal-lang/built-in/parsers/prattparser"
@@ -83,6 +85,27 @@ func (w *WholeParser) GetTokenType() lexer.TokenType {
 }
 
 func (w *WholeParser) ParsePrefix(_ *prattparser.PrattParser, l *lexer.Lexer, minBindingPower uint32) []ast.Node {
+	text := l.Peek(0).Value
+	number := number{}
+
+	number.addDigit(text[0] - 48, 10)
+
+	previousWasUnderScore := false
+	
+	for _, c := range []byte(text[1:]) {
+		if c != '_' {
+			number.addDigit(c - 48, 10)
+		} else if previousWasUnderScore {
+			// TODO error
+		} else {
+			previousWasUnderScore = true
+		}
+	}
+
+	if previousWasUnderScore {
+		// TODO error
+	}
+
 	return []ast.Node{}
 }
 
@@ -124,4 +147,26 @@ func (f *FractionNegativeExponentParser) GetTokenType() lexer.TokenType {
 
 func (f *FractionNegativeExponentParser) ParsePrefix(_ *prattparser.PrattParser, l *lexer.Lexer, minBindingPower uint32) []ast.Node {
 	return []ast.Node{}
+}
+
+func (n *number) addDigit(digit, base uint8) {
+	if digit >= base {
+        panic(fmt.Sprintf("digit %d is not valid for base %d", digit, base))
+    }
+
+	carry := digit
+
+	for j := range *n {
+        // I think that hi can only reach MAX - 1 so we can ignore the carry below
+        hi, lo := bits.Mul((*n)[j], uint(base))
+        lo, carryOut := bits.Add(lo, uint(carry), 0)
+        hi, _ = bits.Add(hi, 0, carryOut)
+
+        (*n)[j] = lo
+        carry = uint8(hi)
+    }
+
+    if carry > 0 {
+		*n = append(*n, uint(carry))
+	}
 }

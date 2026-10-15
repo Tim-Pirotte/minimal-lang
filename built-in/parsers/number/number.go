@@ -163,7 +163,6 @@ func (n *NumberParser) ParsePrefix(_ *prattparser.PrattParser, l *lexer.Lexer, m
 
 func (i *IntegerLiteral) AddDigit(base base, digit uint) {
     if digit >= uint(base) {
-        // TODO
         panic(fmt.Sprintf("digit %d is not valid for base %d", digit, base))
     }
 
