@@ -2,13 +2,15 @@ package decimalparser
 
 import (
 	"fmt"
-	"math/bits"
+	"math/big"
 	"minimal/minimal-lang/built-in/ast"
 	"minimal/minimal-lang/built-in/lexer"
 	"minimal/minimal-lang/built-in/parsers/prattparser"
 )
 
-type number []uint
+type number struct {
+	big.Int
+}
 
 type WholeParser struct {
 	tokenType lexer.TokenType
@@ -171,19 +173,13 @@ func (n *number) addDigit(digit, base uint8) {
         panic(fmt.Sprintf("digit %d is not valid for base %d", digit, base))
     }
 
-	carry := digit
+	bigBase := big.NewInt(int64(base))
+	bigDigit := big.NewInt(int64(digit))
 
-	for j := range *n {
-        // I think that hi can only reach MAX - 1 so we can ignore the carry below
-        hi, lo := bits.Mul((*n)[j], uint(base))
-        lo, carryOut := bits.Add(lo, uint(carry), 0)
-        hi, _ = bits.Add(hi, 0, carryOut)
+	n.Mul(&n.Int, bigBase)
+	n.Add(&n.Int, bigDigit)
+}
 
-        (*n)[j] = lo
-        carry = uint8(hi)
-    }
-
-    if carry > 0 {
-		*n = append(*n, uint(carry))
-	}
+func (n number) String() string {
+	return n.Text(10)
 }
