@@ -4,10 +4,12 @@ import (
 	"math/big"
 	"minimal/minimal-lang/built-in/ast"
 	"minimal/minimal-lang/built-in/lexer"
+	"minimal/minimal-lang/built-in/messenger"
 	"minimal/minimal-lang/built-in/parsers/prattparser"
 )
 
 type WholeParser struct {
+	messenger *messenger.Messenger
 	tokenType lexer.TokenType
 	nodeType  ast.NodeType
 	numbers   []*big.Int
@@ -53,9 +55,12 @@ type fractionExponent struct {
 	exponent *big.Int
 }
 
-func NewWholeParser(tokenType lexer.TokenType, nodeType ast.NodeType) *WholeParser {
-	// These are initialized lazily
-    return &WholeParser{tokenType, nodeType, nil}
+func NewWholeParser(
+	tokenType lexer.TokenType, 
+	nodeType ast.NodeType, 
+	messenger *messenger.Messenger,
+) *WholeParser {
+    return &WholeParser{messenger, tokenType, nodeType, nil}
 }
 
 func NewWholeExponentParser(tokenType lexer.TokenType, nodeType ast.NodeType) *WholeExponentParser {
@@ -91,7 +96,11 @@ func (w *WholeParser) GetTokenType() lexer.TokenType {
     return w.tokenType
 }
 
-func (w *WholeParser) ParsePrefix(_ *prattparser.PrattParser, l *lexer.Lexer, minBindingPower uint32) []ast.Node {
+func (w *WholeParser) ParsePrefix(
+	_ *prattparser.PrattParser, 
+	l *lexer.Lexer, 
+	minBindingPower uint32,
+) []ast.Node {
 	text := l.Peek(0).Value
 	number := big.NewInt(0)
 
@@ -100,19 +109,31 @@ func (w *WholeParser) ParsePrefix(_ *prattparser.PrattParser, l *lexer.Lexer, mi
 
 	previousWasUnderScore := false
 	
-	for _, c := range []byte(text[1:]) {
+	for i, c := range []byte(text[1:]) {
 		if c != '_' {
 			number.Mul(number, big.NewInt(10))
 			number.Add(number, big.NewInt(int64(c - 48)))
 		} else if previousWasUnderScore {
-			// TODO error
+			w.messenger.Send(
+				messenger.Message{
+					Message: "Two successive underscore in number literal", 
+					Severity: messenger.Warning,
+					Context: []messenger.Span{{Content: text[i:i + 2]}},
+				},
+			)
 		} else {
 			previousWasUnderScore = true
 		}
 	}
 
 	if previousWasUnderScore {
-		// TODO error
+		w.messenger.Send(
+			messenger.Message{
+				Message: "Number literal ends with underscore", 
+				Severity: messenger.Warning,
+				Context: []messenger.Span{{Content: text[len(text) - 1:]}},
+			},
+		)
 	}
 
 	w.numbers = append(w.numbers, number)
