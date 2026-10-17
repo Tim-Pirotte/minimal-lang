@@ -1,21 +1,16 @@
 package decimalparser
 
 import (
-	"fmt"
 	"math/big"
 	"minimal/minimal-lang/built-in/ast"
 	"minimal/minimal-lang/built-in/lexer"
 	"minimal/minimal-lang/built-in/parsers/prattparser"
 )
 
-type number struct {
-	big.Int
-}
-
 type WholeParser struct {
 	tokenType lexer.TokenType
 	nodeType  ast.NodeType
-	numbers   []number
+	numbers   []*big.Int
 }
 
 type WholeExponentParser struct {
@@ -33,7 +28,7 @@ type WholeNegativeExponentParser struct {
 type FractionParser struct {
     tokenType lexer.TokenType
 	nodeType  ast.NodeType
-	numbers   []fraction
+	numbers   []*big.Rat
 }
 
 type FractionExponentParser struct {
@@ -48,19 +43,14 @@ type FractionNegativeExponentParser struct {
     numbers   []fractionExponent
 }
 
-type fraction struct {
-	decimal    number
-	fractional number
-}
-
 type wholeExponent struct {
-	whole    number
-	exponent number
+	whole    *big.Int
+	exponent *big.Int
 }
 
 type fractionExponent struct {
-	fraction fraction
-	exponent number
+	fraction *big.Rat
+	exponent *big.Int
 }
 
 func NewWholeParser(tokenType lexer.TokenType, nodeType ast.NodeType) *WholeParser {
@@ -103,15 +93,17 @@ func (w *WholeParser) GetTokenType() lexer.TokenType {
 
 func (w *WholeParser) ParsePrefix(_ *prattparser.PrattParser, l *lexer.Lexer, minBindingPower uint32) []ast.Node {
 	text := l.Peek(0).Value
-	number := number{}
+	number := big.NewInt(0)
 
-	number.addDigit(text[0] - 48, 10)
+	number.Mul(number, big.NewInt(10))
+	number.Add(number, big.NewInt(int64(text[0] - 48)))
 
 	previousWasUnderScore := false
 	
 	for _, c := range []byte(text[1:]) {
 		if c != '_' {
-			number.addDigit(c - 48, 10)
+			number.Mul(number, big.NewInt(10))
+			number.Add(number, big.NewInt(int64(c - 48)))
 		} else if previousWasUnderScore {
 			// TODO error
 		} else {
@@ -166,20 +158,4 @@ func (f *FractionNegativeExponentParser) GetTokenType() lexer.TokenType {
 
 func (f *FractionNegativeExponentParser) ParsePrefix(_ *prattparser.PrattParser, l *lexer.Lexer, minBindingPower uint32) []ast.Node {
 	return []ast.Node{}
-}
-
-func (n *number) addDigit(digit, base uint8) {
-	if digit >= base {
-        panic(fmt.Sprintf("digit %d is not valid for base %d", digit, base))
-    }
-
-	bigBase := big.NewInt(int64(base))
-	bigDigit := big.NewInt(int64(digit))
-
-	n.Mul(&n.Int, bigBase)
-	n.Add(&n.Int, bigDigit)
-}
-
-func (n number) String() string {
-	return n.Text(10)
 }
