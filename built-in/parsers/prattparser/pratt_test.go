@@ -3,7 +3,8 @@ package prattparser
 import (
 	"minimal/minimal-lang/built-in/ast"
 	"minimal/minimal-lang/built-in/lexer"
-	symbols "minimal/minimal-lang/built-in/matchers/symbol"
+    // TODO should we be able to depend on lower dependencies
+	symbols "minimal/minimal-lang/built-in/extensions/lexer-matchers/symbol"
 	"reflect"
 	"testing"
 )

@@ -3,9 +3,9 @@ package main
 import (
 	"bufio"
 	messaging "minimal/minimal-lang/built-in/messenger"
-	"minimal/minimal-lang/built-in/outputs/log-renderer"
+	"minimal/minimal-lang/built-in/extensions/messenger-outputs/log-renderer"
 	"minimal/minimal-lang/built-in/startup"
-	"minimal/minimal-lang/built-in/user-interfaces/cli"
+	"minimal/minimal-lang/built-in/extensions/ui/cli"
 	"minimal/minimal-lang/setup"
 	"os"
 )

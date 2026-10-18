@@ -3,7 +3,7 @@ package decimalparser
 import (
 	"minimal/minimal-lang/built-in/ast"
 	"minimal/minimal-lang/built-in/lexer"
-	decimalmatcher "minimal/minimal-lang/built-in/matchers/decimal"
+	decimalmatcher "minimal/minimal-lang/built-in/extensions/lexer-matchers/decimal"
 	"minimal/minimal-lang/built-in/parsers/prattparser"
 	"testing"
 )

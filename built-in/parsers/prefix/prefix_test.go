@@ -3,9 +3,9 @@ package prefix
 import (
 	"minimal/minimal-lang/built-in/ast"
 	"minimal/minimal-lang/built-in/lexer"
-	symbols "minimal/minimal-lang/built-in/matchers/symbol"
+	symbols "minimal/minimal-lang/built-in/extensions/lexer-matchers/symbol"
 	"minimal/minimal-lang/built-in/messenger"
-	"minimal/minimal-lang/built-in/outputs/test-output"
+	"minimal/minimal-lang/built-in/extensions/messenger-outputs/test-output"
 	"testing"
 )
 
