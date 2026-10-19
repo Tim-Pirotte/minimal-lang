@@ -1,6 +1,9 @@
 package sources
 
-import "math"
+import (
+	"math"
+	"minimal/minimal-lang/built-in/substring"
+)
 
 type Sources struct {
 	Sources []Source
@@ -23,4 +26,14 @@ func (s *Sources) Add(source Source) bool {
 	s.Sources = append(s.Sources, source)
 
 	return true
+}
+
+func (s *Sources) GetSourceOfText(text string) (Source, bool) {
+	for _, source := range s.Sources {
+		if substring.IsSubString(source.Content, text) {
+			return source, true
+		}
+	}
+	
+	return Source{}, false
 }
