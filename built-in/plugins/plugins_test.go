@@ -2,7 +2,7 @@ package plugins
 
 import (
 	"minimal/minimal-lang/built-in/messenger"
-	"minimal/minimal-lang/built-in/extensions/messenger-outputs/test-output"
+	"minimal/minimal-lang/built-in/outputs/test-output"
 	"testing"
 )
 

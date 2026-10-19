@@ -3,7 +3,7 @@ package testoutput
 import (
 	"fmt"
 	"minimal/minimal-lang/built-in/messenger"
-	"minimal/minimal-lang/built-in/extensions/messenger-outputs/log-renderer"
+	"minimal/minimal-lang/built-in/outputs/log-renderer"
 	"minimal/minimal-lang/built-in/substring"
 	"os"
 	"reflect"
