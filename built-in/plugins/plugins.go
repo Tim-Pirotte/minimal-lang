@@ -1,8 +1,6 @@
 package plugins
 
 import (
-	"fmt"
-	"minimal/minimal-lang/built-in/messenger"
 	"reflect"
 )
 
@@ -11,7 +9,6 @@ type registry struct {
 }
 
 type plugins struct {
-    messenger *messenger.Messenger
     mapping   map[reflect.Type]Plugin
 }
 
@@ -19,8 +16,8 @@ type Plugin interface {
     Init(*plugins)
 }
 
-func NewRegistry(messenger *messenger.Messenger) registry {
-    return registry{plugins{messenger, map[reflect.Type]Plugin{}}}
+func NewRegistry() registry {
+    return registry{plugins{map[reflect.Type]Plugin{}}}
 }
 
 func (r *registry) Add(plugin Plugin) bool {
@@ -49,7 +46,7 @@ func Get[T any](p *plugins) (T, bool) {
     t := reflect.TypeFor[T]()
 
     if t.Kind() != reflect.Pointer {
-        p.logNotRetrievingPointer(t)
+        panic("T should be a pointer")
     }
 
     if p, ok := p.mapping[t]; ok {
@@ -59,23 +56,4 @@ func Get[T any](p *plugins) (T, bool) {
 
         return empty, false
     }
-}
-
-func (p *plugins) logPluginNotAPointer(t reflect.Type) {
-    p.messenger.Send(messenger.Message{
-        Message: "Plugin should be a pointer",
-        Severity: messenger.Error,
-        Notes: []string{
-            fmt.Sprintf("Plugin type: %s", t),
-            "The plugin wont be added to the registry",
-        },
-    })
-}
-
-func (p *plugins) logNotRetrievingPointer(t reflect.Type) {
-    p.messenger.Send(messenger.Message{
-        Message: "Cannot retrieve a non pointer plugin since all plugins are pointers",
-        Severity: messenger.Error,
-        Notes: []string{fmt.Sprintf("Requested type: %s", t)},
-    })
 }

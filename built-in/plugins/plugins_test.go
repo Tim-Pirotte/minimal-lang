@@ -1,21 +1,12 @@
 package plugins
 
 import (
-	"minimal/minimal-lang/built-in/messenger"
-	"minimal/minimal-lang/built-in/outputs/test-output"
 	"testing"
 )
 
 func TestEmpty(t *testing.T) {
-    m := messenger.New()
-    to := testoutput.New()
-    m.AddOutput(to)
-
-    r := NewRegistry(m)
+    r := NewRegistry()
     r.Setup()
-
-    m.Close()
-    to.CheckMessages(t, []messenger.Message{})
 }
 
 type okPlugin struct {
@@ -27,11 +18,7 @@ func (o *okPlugin) Init(*plugins) {
 }
 
 func TestAdd(t *testing.T) {
-    m := messenger.New()
-    to := testoutput.New()
-    m.AddOutput(to)
-
-    r := NewRegistry(m)
+    r := NewRegistry()
 
     o := &okPlugin{}
     r.Add(o)
@@ -41,9 +28,6 @@ func TestAdd(t *testing.T) {
     if !o.ok {
         t.Error("Expected ok to be true")
     }
-
-    m.Close()
-    to.CheckMessages(t, []messenger.Message{})
 }
 
 type firstGetPlugin struct {
@@ -77,11 +61,7 @@ func (s *secondGetPlugin) Init(p *plugins) {
 }
 
 func TestGet(t *testing.T) {
-    m := messenger.New()
-    to := testoutput.New()
-    m.AddOutput(to)
-
-    r := NewRegistry(m)
+    r := NewRegistry()
 
     p1 := &firstGetPlugin{t: t}
     r.Add(p1)
@@ -98,9 +78,6 @@ func TestGet(t *testing.T) {
     if !p2.ok {
         t.Error("Expected p2.ok to be true")
     }
-
-    m.Close()
-    to.CheckMessages(t, []messenger.Message{})
 }
 
 type selfRetrievingPlugin struct {
@@ -123,11 +100,7 @@ func (s *selfRetrievingPlugin) Init(p *plugins) {
 }
 
 func TestGetItself(t *testing.T) {
-    m := messenger.New()
-    to := testoutput.New()
-    m.AddOutput(to)
-
-    r := NewRegistry(m)
+    r := NewRegistry()
 
     s := &selfRetrievingPlugin{t: t}
     r.Add(s)
@@ -137,9 +110,6 @@ func TestGetItself(t *testing.T) {
     if !s.ok {
         t.Error("Expected ok to be true")
     }
-
-    m.Close()
-    to.CheckMessages(t, []messenger.Message{})
 }
 
 type missingPlugin struct {
@@ -155,34 +125,25 @@ func (m *missingPlugin) Init(p *plugins) {
 }
 
 func TestMissing(t *testing.T) {
-    m := messenger.New()
-    to := testoutput.New()
-    m.AddOutput(to)
-
-    r := NewRegistry(m)
+    r := NewRegistry()
 
     mp := &missingPlugin{t: t}
     r.Add(mp)
 
     r.Setup()
-
-    m.Close()
-    to.CheckMessages(t, []messenger.Message{})
 }
 
 func TestDuplicate(t *testing.T) {
-    m := messenger.New()
-    to := testoutput.New()
-    m.AddOutput(to)
-
-    r := NewRegistry(m)
+    r := NewRegistry()
 
     o1 := &okPlugin{}
+
     if !r.Add(o1) {
         t.Error("Expected adding o1 to succeed")
     }
 
     o2 := &okPlugin{}
+
     if r.Add(o2) {
         t.Error("Expected adding o2 to fail")
     }
@@ -196,9 +157,6 @@ func TestDuplicate(t *testing.T) {
     if o2.ok {
         t.Error("Expected o2.ok to be false")
     }
-
-    m.Close()
-    to.CheckMessages(t, nil)
 }
 
 type valuePlugin struct {}
@@ -206,66 +164,41 @@ type valuePlugin struct {}
 func (valuePlugin) Init(*plugins) {}
 
 func TestNonReference(t *testing.T) {
-    m := messenger.New()
-    to := testoutput.New()
-    m.AddOutput(to)
+    defer func() {
+        if r := recover(); r == nil {
+            t.Fail()
+        } else if r != "plugin is not a pointer" {
+            t.Errorf("Incorrect panic message: %s", r)
+        }
+    }()
 
-    r := NewRegistry(m)
+    r := NewRegistry()
 
     v := valuePlugin{}
     r.Add(v)
 
     r.Setup()
-
-    m.Close()
-    to.CheckMessages(
-        t,
-        []messenger.Message{
-            {
-                Message: "Plugin should be a pointer",
-                Severity: messenger.Error,
-                Notes: []string{
-                    "Plugin type: plugins.valuePlugin",
-                    "The plugin wont be added to the registry",
-                },
-            },
-        },
-    )
 }
 
-type pointerPlugin struct {
-    t *testing.T
+type getNonReferencePlugin struct {}
+
+func (*getNonReferencePlugin) Init(p *plugins) {
+    Get[getNonReferencePlugin](p)
 }
 
-func (p  *pointerPlugin) Init(plugins *plugins) {
-    _, ok := Get[pointerPlugin](plugins)
+func TestGetNonReference(t *testing.T) {
+    defer func() {
+        if r := recover(); r == nil {
+            t.Fail()
+        } else if r != "T should be a pointer" {
+            t.Errorf("Incorrect panic message: %s", r)
+        }
+    }()
 
-    if ok {
-        p.t.Error("Expected ok to be false")
-    }
-}
+    r := NewRegistry()
 
-func TestRetrieveNonReference(t *testing.T) {
-    m := messenger.New()
-    to := testoutput.New()
-    m.AddOutput(to)
-
-    r := NewRegistry(m)
-
-    p := pointerPlugin{}
-    r.Add(&p)
+    v := getNonReferencePlugin{}
+    r.Add(&v)
 
     r.Setup()
-
-    m.Close()
-    to.CheckMessages(
-        t,
-        []messenger.Message{
-            {
-                Message: "Cannot retrieve a non pointer plugin since all plugins are pointers",
-                Severity: messenger.Error,
-                Notes: []string{"Requested type: plugins.pointerPlugin"},
-            },
-        },
-    )
 }
